@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/signal"
 	"runtime/debug"
+	"strings"
 	"syscall"
 	"time"
 
@@ -23,7 +24,7 @@ import (
 const appName = "apisrv"
 
 var (
-	fs                 = flag.NewFlagSetWithEnvPrefix(os.Args[0], "APISRV", 0)
+	fs                 = flag.NewFlagSetWithEnvPrefix(os.Args[0], strings.ToUpper(appName), 0)
 	flConfigPath       = fs.String("config", "config.toml", "Path to config file")
 	flVerbose          = fs.Bool("verbose", false, "enable debug output")
 	flJSONLogs         = fs.Bool("json", false, "enable json output")

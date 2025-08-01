@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"apisrv/pkg/db"
+	"apisrv/pkg/db/test"
 
 	. "github.com/smartystreets/goconvey/convey"
 )
@@ -14,7 +15,7 @@ import (
 func TestDB_AuthService(t *testing.T) {
 	Convey("Test AuthService", t, func() {
 		ctx := t.Context()
-		srv := NewAuthService(testDB)
+		srv := NewAuthService(test.Setup(t))
 		So(srv, ShouldNotBeNil)
 
 		Convey("Positive testing", func() {
@@ -83,7 +84,7 @@ func TestDB_AuthService(t *testing.T) {
 func TestDB_UserService(t *testing.T) {
 	Convey("Test UserService", t, func() {
 		ctx := t.Context()
-		srv := NewUserService(testDB)
+		srv := NewUserService(test.Setup(t))
 		So(srv, ShouldNotBeNil)
 
 		Convey("Positive testing", func() {

@@ -82,7 +82,7 @@ NS := "NONE"
 MAPPING := "common:users;vfs:vfsFiles,vfsFolders"
 
 mfd-xml:
-	@mfd-generator xml -c "postgres://postgres:postgres@localhost:5432/$(PGDATABASE)?sslmode=disable" -m ./docs/model/apisrv.mfd -n $(MAPPING)
+	@mfd-generator xml -c "postgres://$(PGUSER):$(PGPASSWORD)@$(PGHOST):5432/$(PGDATABASE)?sslmode=disable" -m ./docs/model/apisrv.mfd -n $(MAPPING)
 mfd-model:
 	@mfd-generator model -m ./docs/model/apisrv.mfd -p db -o ./pkg/db
 mfd-repo: --check-ns

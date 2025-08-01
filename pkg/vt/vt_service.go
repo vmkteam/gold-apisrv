@@ -10,12 +10,15 @@ import (
 
 	"apisrv/pkg/db"
 
+	"github.com/vmkteam/embedlog"
 	"github.com/vmkteam/zenrpc/v2"
 	"golang.org/x/crypto/bcrypt"
 )
 
 type AuthService struct {
 	zenrpc.Service
+	embedlog.Logger
+
 	commonRepo db.CommonRepo
 }
 
@@ -23,9 +26,10 @@ var (
 	errInvalidLoginPassword = zenrpc.NewStringError(http.StatusBadRequest, "invalid login or password")
 )
 
-func NewAuthService(dbo db.DB) *AuthService {
+func NewAuthService(dbo db.DB, logger embedlog.Logger) *AuthService {
 	return &AuthService{
 		commonRepo: db.NewCommonRepo(dbo),
+		Logger:     logger,
 	}
 }
 
@@ -151,12 +155,15 @@ func passwordHash(password string) (string, error) {
 
 type UserService struct {
 	zenrpc.Service
+	embedlog.Logger
+
 	commonRepo db.CommonRepo
 }
 
-func NewUserService(dbo db.DB) *UserService {
+func NewUserService(dbo db.DB, logger embedlog.Logger) *UserService {
 	return &UserService{
 		commonRepo: db.NewCommonRepo(dbo),
+		Logger:     logger,
 	}
 }
 

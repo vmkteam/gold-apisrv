@@ -64,8 +64,8 @@ func New(dbo db.DB, logger embedlog.Logger, isDevel bool) zenrpc.Server {
 
 	// services
 	rpc.RegisterAll(map[string]zenrpc.Invoker{
-		NSAuth: NewAuthService(dbo),
-		NSUser: NewUserService(dbo),
+		NSAuth: NewAuthService(dbo, logger),
+		NSUser: NewUserService(dbo, logger),
 	})
 
 	return rpc
