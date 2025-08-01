@@ -3,7 +3,6 @@ FROM alpine:latest
 ARG CI_PROJECT_NAME=apisrv
 ENV CI_PROJECT_NAME=$CI_PROJECT_NAME
 
-ENV TZ=Europe/Moscow
 RUN apk --no-cache add ca-certificates tzdata
 
 COPY ./$CI_PROJECT_NAME /opt/$CI_PROJECT_NAME/$CI_PROJECT_NAME
