@@ -3,7 +3,6 @@ package test
 import (
 	"context"
 	"fmt"
-	"log"
 	"net"
 	"os"
 	"testing"
@@ -13,6 +12,8 @@ import (
 	"github.com/go-pg/pg/v10"
 	"github.com/vmkteam/embedlog"
 )
+
+var logger embedlog.Logger
 
 func getenv(key, fallback string) string {
 	if val := os.Getenv(key); val != "" {
@@ -24,7 +25,7 @@ func getenv(key, fallback string) string {
 type Cleaner func()
 
 func Setup(t *testing.T) (db.DB, embedlog.Logger) {
-	// Создаём подключение к базе данных
+	// Create db connection
 	conn, err := setup()
 	if err != nil {
 		if t == nil {
@@ -33,7 +34,7 @@ func Setup(t *testing.T) (db.DB, embedlog.Logger) {
 		t.Fatal(err)
 	}
 
-	// Очистка после тестов.
+	// Cleanup after tests.
 	if t != nil {
 		t.Cleanup(func() {
 			if err := conn.Close(); err != nil {
@@ -42,7 +43,7 @@ func Setup(t *testing.T) (db.DB, embedlog.Logger) {
 		})
 	}
 
-	logger := embedlog.NewLogger(true, true)
+	logger = embedlog.NewLogger(true, true)
 	return db.New(conn), logger
 }
 
@@ -63,7 +64,7 @@ func setup() (*pg.DB, error) {
 	}
 	conn := pg.Connect(cfg)
 
-	if r := os.Getenv("DB_LOG_QUERY"); r == "true" {
+	if r := getenv("DB_LOG_QUERY", "false"); r == "true" {
 		conn.AddQueryHook(testDBLogQuery{})
 	}
 
@@ -76,9 +77,9 @@ func (d testDBLogQuery) BeforeQuery(ctx context.Context, _ *pg.QueryEvent) (cont
 	return ctx, nil
 }
 
-func (d testDBLogQuery) AfterQuery(_ context.Context, q *pg.QueryEvent) error {
+func (d testDBLogQuery) AfterQuery(ctx context.Context, q *pg.QueryEvent) error {
 	if fm, err := q.FormattedQuery(); err == nil {
-		log.Println(string(fm))
+		logger.Print(ctx, string(fm))
 	}
 	return nil
 }
