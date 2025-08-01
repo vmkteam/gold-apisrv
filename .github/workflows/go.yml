@@ -43,8 +43,18 @@ jobs:
     - name: Tests with db
       run: make test
 
-    - name: Test without db
-      run: make test
+  test-short:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Set up Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: '1.24.x'
+
+    - name: Tests without db
+      run: make test-short
 
   build:
     runs-on: ubuntu-latest
