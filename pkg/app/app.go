@@ -73,7 +73,7 @@ func (a *App) Run(ctx context.Context) error {
 	a.registerDebugHandlers()
 	a.registerAPIHandlers()
 	a.registerVTApiHandlers()
-	a.registerDiscovery()
+	a.registerMetadata()
 
 	return a.runHTTPServer(ctx, a.cfg.Server.Host, a.cfg.Server.Port)
 }
