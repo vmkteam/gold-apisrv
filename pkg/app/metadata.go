@@ -16,7 +16,7 @@ func (a *App) registerMetadata() {
 			NewDBMetadata(a.cfg.Database.Database, a.cfg.Database.PoolSize, false),
 		},
 		Services: []ServiceMetadata{
-			//NewServiceMetadata("srv", MetadataServiceTypeAsync),
+			// NewServiceMetadata("srv", MetadataServiceTypeAsync),
 		},
 	}
 
