@@ -4,6 +4,10 @@
         <string>common</string>
         <string>vfs</string>
     </PackageNames>
+    <TableMapping>
+        <common>users</common>
+        <vfs>vfsFiles,vfsFolders</vfs>
+    </TableMapping>
     <Languages>
         <string>ru</string>
     </Languages>
