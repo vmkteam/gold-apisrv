@@ -25,6 +25,7 @@ init:
 	@cp -n cfg/local.toml.dist cfg/local.toml
 
 show-env:
+	@echo "NAME=$(NAME)"
 	@echo "TEST_PGDATABASE=$(TEST_PGDATABASE)"
 	@echo "PGDATABASE=$(PGDATABASE)"
 	@echo "PGHOST=$(PGHOST)"

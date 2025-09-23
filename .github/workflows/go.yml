@@ -11,6 +11,7 @@ env:
   PGHOST: localhost
   PGPASSWORD: postgres
   PGDATABASE: test-apisrv
+  NAME: apisrv
 
 jobs:
 
