@@ -16,6 +16,8 @@ jobs:
 
   test:
     runs-on: ubuntu-latest
+    env:
+      TEST_PGDATABASE: test-apisrv
     services:
       postgres:
         image: postgres
