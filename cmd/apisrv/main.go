@@ -85,8 +85,8 @@ func main() {
 
 	// generate TS client from cmd flags
 	if *flGenerateTSClient {
-		b, err := a.VTTypeScriptClient()
-		exitOnError(err)
+		b, er := a.VTTypeScriptClient()
+		exitOnError(er)
 		_, _ = fmt.Fprint(os.Stdout, string(b))
 		os.Exit(0)
 	}
@@ -104,8 +104,8 @@ func main() {
 			}
 		}()
 
-		if err := a.Run(ctx); err != nil {
-			a.Print(ctx, "shutting down http server", "err", err)
+		if err = a.Run(ctx); err != nil {
+			a.Print(ctx, "shutting down service", "err", err)
 		}
 	}()
 	<-quit
@@ -115,7 +115,7 @@ func main() {
 // exitOnError calls log.Fatal if err wasn't nil.
 func exitOnError(err error) {
 	if err != nil {
-		//nolint:sloglint,noctx
+		//nolint:sloglint
 		slog.Error(err.Error())
 		os.Exit(1)
 	}
