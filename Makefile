@@ -1,4 +1,4 @@
-NAME := apisrv
+-include Makefile.mk
 
 GOFLAGS=-mod=vendor
 
@@ -8,27 +8,31 @@ ifeq ($(RACE),1)
 	GOFLAGS+=-race
 endif
 
-LINT_VERSION := v2.3.0
+LINT_VERSION := v2.4.0
 
 MAIN := ${NAME}/cmd/${NAME}
 
-PGDATABASE ?= apisrv
-PGHOST ?= localhost
-PGUSER ?= postgres
-PGPASSWORD ?= postgres
-
-TEST_PGDATABASE ?= test-apisrv
-
 export PGDATABASE
 export PGHOST
+export PGPORT
 export PGUSER
 export PGPASSWORD
 
+.PHONY: *
+
+init:
+	@cp -n Makefile.mk.dist Makefile.mk
+	@cp -n cfg/local.toml.dist cfg/local.toml
+
 show-env:
+	@echo "NAME=$(NAME)"
+	@echo "TEST_PGDATABASE=$(TEST_PGDATABASE)"
 	@echo "PGDATABASE=$(PGDATABASE)"
 	@echo "PGHOST=$(PGHOST)"
+	@echo "PGPORT=$(PGPORT)"
 	@echo "PGUSER=$(PGUSER)"
 	@echo "PGPASSWORD=$(PGPASSWORD)"
+	@echo "GOFLAGS=$(GOFLAGS)"
 
 tools:
 	@go install github.com/vmkteam/mfd-generator@latest
@@ -71,7 +75,7 @@ mod:
 db:
 	@dropdb --if-exists -f $(PGDATABASE)
 	@createdb $(PGDATABASE)
-	@psql -f docs/apisrv.sql $(PGDATABASE)
+	@psql -f docs/$(NAME).sql $(PGDATABASE)
 	@psql -f docs/init.sql $(PGDATABASE)
 
 db-test:
@@ -79,23 +83,21 @@ db-test:
 
 NS := "NONE"
 
-MAPPING := "common:users;vfs:vfsFiles,vfsFolders"
-
 mfd-xml:
-	@mfd-generator xml -c "postgres://$(PGUSER):$(PGPASSWORD)@$(PGHOST):5432/$(PGDATABASE)?sslmode=disable" -m ./docs/model/apisrv.mfd -n $(MAPPING)
+	@mfd-generator xml -c "postgres://$(PGUSER):$(PGPASSWORD)@$(PGHOST):$(PGPORT)/$(PGDATABASE)?sslmode=disable" -m ./docs/model/$(NAME).mfd
 mfd-model:
-	@mfd-generator model -m ./docs/model/apisrv.mfd -p db -o ./pkg/db
+	@mfd-generator model -m ./docs/model/$(NAME).mfd -p db -o ./pkg/db
 mfd-repo: --check-ns
-	@mfd-generator repo -m ./docs/model/apisrv.mfd -p db -o ./pkg/db -n $(NS)
+	@mfd-generator repo -m ./docs/model/$(NAME).mfd -p db -o ./pkg/db -n $(NS)
 mfd-vt-xml:
-	@mfd-generator xml-vt -m ./docs/model/apisrv.mfd
+	@mfd-generator xml-vt -m ./docs/model/$(NAME).mfd
 mfd-vt-rpc: --check-ns
-	@mfd-generator vt -m docs/model/apisrv.mfd -o pkg/vt -p vt -x apisrv/pkg/db -n $(NS)
+	@mfd-generator vt -m docs/model/$(NAME).mfd -o pkg/vt -p vt -x $(NAME)/pkg/db -n $(NS)
 mfd-xml-lang:
 	#TODO: add namespaces support for xml-lang command
-	@mfd-generator xml-lang  -m ./docs/model/apisrv.mfd
+	@mfd-generator xml-lang  -m ./docs/model/$(NAME).mfd
 mfd-vt-template: --check-ns type-script-client
-	@mfd-generator template -m docs/model/apisrv.mfd  -o ../gold-vt/ -n $(NS)
+	@mfd-generator template -m docs/model/$(NAME).mfd  -o ../gold-vt/ -n $(NS)
 
 type-script-client: generate
 	@go run $(GOFLAGS) $(MAIN) -config=cfg/local.toml -ts_client > ../gold-vt/src/services/api/factory.ts

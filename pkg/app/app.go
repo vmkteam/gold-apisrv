@@ -92,6 +92,6 @@ func (a *App) Shutdown(timeout time.Duration) {
 	a.mon.Close()
 
 	if err := a.echo.Shutdown(ctx); err != nil {
-		a.Error(ctx, "shutting down server", "err", err)
+		a.Error(ctx, "shutting down http server", "err", err)
 	}
 }

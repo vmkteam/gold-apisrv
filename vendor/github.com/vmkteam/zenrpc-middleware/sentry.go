@@ -141,9 +141,11 @@ func WithErrorSLog(pf Print, serverName string, fn LogAttrs) zenrpc.MiddlewareFu
 				duration := time.Since(start)
 				methodName := fullMethodName(serverName, namespace, method)
 
+				t := time.Since(start)
 				logArgs := append(additionalArgs(ctx), []any{
 					"method", fullMethodName(serverName, zenrpc.NamespaceFromContext(ctx), method),
-					"duration", time.Since(start),
+					"duration", t.String(),
+					"durationMS", t.Milliseconds(),
 					"params", params,
 					"err", r.Error,
 					"userAgent", UserAgentFromContext(ctx),

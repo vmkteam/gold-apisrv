@@ -11,11 +11,14 @@ env:
   PGHOST: localhost
   PGPASSWORD: postgres
   PGDATABASE: test-apisrv
+  NAME: apisrv
 
 jobs:
 
   test:
     runs-on: ubuntu-latest
+    env:
+      TEST_PGDATABASE: test-apisrv
     services:
       postgres:
         image: postgres

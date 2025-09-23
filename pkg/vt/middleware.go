@@ -47,8 +47,8 @@ func authMiddleware(commonRepo *db.CommonRepo, logger embedlog.Logger) zenrpc.Mi
 
 			// updating last activity
 			if dbu.LastActivityAt == nil || time.Since(*dbu.LastActivityAt) > time.Second*90 {
-				if _, err := commonRepo.UpdateUserActivity(ctx, dbu); err != nil {
-					logger.Errorf("update user activity error=%s", err)
+				if _, err = commonRepo.UpdateUserActivity(ctx, dbu); err != nil {
+					logger.Error(ctx, "update user activity", "err", err)
 				}
 			}
 
