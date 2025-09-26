@@ -40,9 +40,9 @@ Ignores Cancel func from context. This is useful for passing context to `go-pg`.
 
 ### WithMetrics
 
-Logs duration of RPC requests via Prometheus. Default AppName is zenrpc. It exposes two
-metrics: `appName_rpc_error_requests_count` and `appName_rpc_responses_duration_seconds`. Labels: method, code,
-platform, version.
+Logs duration of RPC requests via Prometheus. Default serverName is rpc (will be in server label).
+It exposes two metrics: `app_rpc_error_requests_total` and `app_rpc_responses_duration_seconds`.
+Labels: method, code, platform, version, server.
 
 ### WithTiming
 

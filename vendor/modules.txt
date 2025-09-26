@@ -177,7 +177,7 @@ github.com/vmkteam/embedlog
 # github.com/vmkteam/meta-schema/v2 v2.0.1
 ## explicit; go 1.13
 github.com/vmkteam/meta-schema/v2
-# github.com/vmkteam/rpcgen/v2 v2.4.5
+# github.com/vmkteam/rpcgen/v2 v2.4.6
 ## explicit; go 1.24.0
 github.com/vmkteam/rpcgen/v2
 github.com/vmkteam/rpcgen/v2/dart
@@ -194,7 +194,7 @@ github.com/vmkteam/vfs/db
 # github.com/vmkteam/zenrpc v1.1.1
 ## explicit
 github.com/vmkteam/zenrpc/smd
-# github.com/vmkteam/zenrpc-middleware v1.2.2
+# github.com/vmkteam/zenrpc-middleware v1.3.0
 ## explicit; go 1.24.5
 github.com/vmkteam/zenrpc-middleware
 # github.com/vmkteam/zenrpc/v2 v2.2.12

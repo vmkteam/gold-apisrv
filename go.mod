@@ -16,9 +16,9 @@ require (
 	github.com/smartystreets/goconvey v1.8.1
 	github.com/vmkteam/appkit v0.0.1
 	github.com/vmkteam/embedlog v0.1.3
-	github.com/vmkteam/rpcgen/v2 v2.4.5
+	github.com/vmkteam/rpcgen/v2 v2.4.6
 	github.com/vmkteam/vfs v1.4.0
-	github.com/vmkteam/zenrpc-middleware v1.2.2
+	github.com/vmkteam/zenrpc-middleware v1.3.0
 	github.com/vmkteam/zenrpc/v2 v2.2.12
 	golang.org/x/crypto v0.42.0
 )
