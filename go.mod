@@ -15,6 +15,7 @@ require (
 	github.com/namsral/flag v1.7.4-pre
 	github.com/prometheus/client_golang v1.23.2
 	github.com/smartystreets/goconvey v1.8.1
+	github.com/vmkteam/appkit v0.0.1
 	github.com/vmkteam/embedlog v0.1.3
 	github.com/vmkteam/rpcgen/v2 v2.4.5
 	github.com/vmkteam/vfs v1.4.0
@@ -58,11 +59,11 @@ require (
 	github.com/vmkteam/meta-schema/v2 v2.0.1 // indirect
 	github.com/vmkteam/zenrpc v1.1.1 // indirect
 	go.uber.org/atomic v1.11.0 // indirect
-	go.yaml.in/yaml/v2 v2.4.2 // indirect
-	golang.org/x/net v0.43.0 // indirect
+	go.yaml.in/yaml/v2 v2.4.3 // indirect
+	golang.org/x/net v0.44.0 // indirect
 	golang.org/x/sys v0.36.0 // indirect
 	golang.org/x/text v0.29.0 // indirect
 	golang.org/x/time v0.11.0 // indirect
-	google.golang.org/protobuf v1.36.8 // indirect
+	google.golang.org/protobuf v1.36.9 // indirect
 	mellium.im/sasl v0.3.2 // indirect
 )

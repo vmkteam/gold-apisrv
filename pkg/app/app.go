@@ -2,7 +2,6 @@ package app
 
 import (
 	"context"
-	"net"
 	"time"
 
 	"apisrv/pkg/db"
@@ -11,6 +10,7 @@ import (
 	"github.com/go-pg/pg/v10"
 	monitor "github.com/hypnoglow/go-pg-monitor"
 	"github.com/labstack/echo/v4"
+	"github.com/vmkteam/appkit"
 	"github.com/vmkteam/embedlog"
 	"github.com/vmkteam/rpcgen/v2"
 	"github.com/vmkteam/rpcgen/v2/typescript"
@@ -50,15 +50,9 @@ func New(appName string, sl embedlog.Logger, cfg Config, db db.DB, dbc *pg.DB) *
 		cfg:     cfg,
 		db:      db,
 		dbc:     dbc,
-		echo:    echo.New(),
+		echo:    appkit.NewEcho(),
 		Logger:  sl,
 	}
-
-	// setup echo
-	a.echo.HideBanner = true
-	a.echo.HidePort = true
-	_, mask, _ := net.ParseCIDR("0.0.0.0/0")
-	a.echo.IPExtractor = echo.ExtractIPFromRealIPHeader(echo.TrustIPRange(mask))
 
 	// add services
 	a.vtsrv = vt.New(a.db, a.Logger, a.cfg.Server.IsDevel)
@@ -94,4 +88,23 @@ func (a *App) Shutdown(timeout time.Duration) {
 	if err := a.echo.Shutdown(ctx); err != nil {
 		a.Error(ctx, "shutting down http server", "err", err)
 	}
+}
+
+// registerMetadata is a function that registers meta info from service. Must be updated.
+func (a *App) registerMetadata() {
+	opts := appkit.MetadataOpts{
+		HasPublicAPI:  true,
+		HasPrivateAPI: true,
+		DBs: []appkit.DBMetadata{
+			appkit.NewDBMetadata(a.cfg.Database.Database, a.cfg.Database.PoolSize, false),
+		},
+		Services: []appkit.ServiceMetadata{
+			// NewServiceMetadata("srv", MetadataServiceTypeAsync),
+		},
+	}
+
+	md := appkit.NewMetadataManager(opts)
+	md.RegisterMetrics()
+
+	a.echo.GET("/debug/metadata", md.Handler)
 }

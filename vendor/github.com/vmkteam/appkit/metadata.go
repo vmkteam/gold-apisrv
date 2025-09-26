@@ -1,4 +1,4 @@
-package app
+package appkit
 
 import (
 	"net/http"
@@ -7,24 +7,6 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/prometheus/client_golang/prometheus"
 )
-
-// registerMetadata is a function that registers meta info from service. Must be updated.
-func (a *App) registerMetadata() {
-	opts := MetadataOpts{
-		HasPublicAPI: true,
-		DBs: []DBMetadata{
-			NewDBMetadata(a.cfg.Database.Database, a.cfg.Database.PoolSize, false),
-		},
-		Services: []ServiceMetadata{
-			// NewServiceMetadata("srv", MetadataServiceTypeAsync),
-		},
-	}
-
-	md := NewMetadataManager(opts)
-	md.RegisterMetrics()
-
-	a.echo.GET("/debug/metadata", md.Handler)
-}
 
 type MetadataServiceType string
 
@@ -92,7 +74,7 @@ func (d *MetadataManager) RegisterMetrics() {
 		prometheus.CounterOpts{
 			Namespace: "app",
 			Subsystem: "metadata",
-			Name:      "db_connections_count_total",
+			Name:      "db_connections_total",
 			Help:      "Number of database connections used by App",
 		}, []string{"dbname", "replica"},
 	)
