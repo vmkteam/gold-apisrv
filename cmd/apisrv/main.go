@@ -6,7 +6,6 @@ import (
 	"log/slog"
 	"os"
 	"os/signal"
-	"runtime/debug"
 	"strings"
 	"syscall"
 	"time"
@@ -18,6 +17,7 @@ import (
 	"github.com/getsentry/sentry-go"
 	"github.com/go-pg/pg/v10"
 	"github.com/namsral/flag"
+	"github.com/vmkteam/appkit"
 	"github.com/vmkteam/embedlog"
 )
 
@@ -46,7 +46,7 @@ func main() {
 	ql := db.NewQueryLogger(sl)
 	pg.SetLogger(ql)
 
-	version := appVersion()
+	version := appkit.Version()
 	sl.Print(ctx, "starting", "app", appName, "version", version)
 	if _, err := toml.DecodeFile(*flConfigPath, &cfg); err != nil {
 		exitOnError(err)
@@ -119,25 +119,4 @@ func exitOnError(err error) {
 		slog.Error(err.Error())
 		os.Exit(1)
 	}
-}
-
-// appVersion returns app version from VCS info.
-func appVersion() string {
-	result := "devel"
-	info, ok := debug.ReadBuildInfo()
-	if !ok {
-		return result
-	}
-
-	for _, v := range info.Settings {
-		if v.Key == "vcs.revision" {
-			result = v.Value
-		}
-	}
-
-	if len(result) > 8 {
-		result = result[:8]
-	}
-
-	return result
 }
