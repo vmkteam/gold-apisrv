@@ -21,7 +21,7 @@ var allowDebugFn = func() zm.AllowDebugFunc {
 	}
 }
 
-//go:generate zenrpc
+//go:generate go tool zenrpc
 
 // New returns new zenrpc Server.
 func New(dbo db.DB, logger embedlog.Logger, isDevel bool) zenrpc.Server {
