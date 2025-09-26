@@ -10,7 +10,7 @@ import (
 	"github.com/vmkteam/zenrpc/v2"
 )
 
-//go:generate zenrpc
+//go:generate go tool zenrpc
 
 const (
 	AuthKey = "Authorization2"
