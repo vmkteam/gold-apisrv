@@ -80,14 +80,12 @@ func (a *App) VTTypeScriptClient() ([]byte, error) {
 }
 
 // Shutdown is a function that gracefully stops HTTP server.
-func (a *App) Shutdown(timeout time.Duration) {
+func (a *App) Shutdown(timeout time.Duration) error {
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 	a.mon.Close()
 
-	if err := a.echo.Shutdown(ctx); err != nil {
-		a.Error(ctx, "shutting down http server", "err", err)
-	}
+	return a.echo.Shutdown(ctx)
 }
 
 // registerMetadata is a function that registers meta info from service. Must be updated.
