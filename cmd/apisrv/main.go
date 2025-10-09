@@ -2,8 +2,10 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
+	"net/http"
 	"os"
 	"os/signal"
 	"strings"
@@ -104,12 +106,21 @@ func main() {
 			}
 		}()
 
-		if err = a.Run(ctx); err != nil {
-			a.Print(ctx, "shutting down service", "err", err)
+		er := a.Run(ctx)
+		if errors.Is(er, http.ErrServerClosed) {
+			er = nil
 		}
+
+		// exit after run failed
+		a.PrintOrErr(ctx, "server stopped", er)
+		quit <- syscall.SIGTERM
 	}()
+
 	<-quit
-	a.Shutdown(5 * time.Second)
+
+	if err = a.Shutdown(5 * time.Second); err != nil {
+		a.Error(ctx, "shutting down service", "err", err)
+	}
 }
 
 // exitOnError calls log.Fatal if err wasn't nil.
