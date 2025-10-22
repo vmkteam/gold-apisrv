@@ -14,12 +14,12 @@ require (
 	github.com/namsral/flag v1.7.4-pre
 	github.com/prometheus/client_golang v1.23.2
 	github.com/smartystreets/goconvey v1.8.1
-	github.com/vmkteam/appkit v0.0.1
+	github.com/vmkteam/appkit v0.1.0
 	github.com/vmkteam/embedlog v0.1.3
-	github.com/vmkteam/rpcgen/v2 v2.4.6
-	github.com/vmkteam/vfs v1.4.0
+	github.com/vmkteam/rpcgen/v2 v2.4.8
+	github.com/vmkteam/vfs v1.4.1
 	github.com/vmkteam/zenrpc-middleware v1.3.0
-	github.com/vmkteam/zenrpc/v2 v2.2.12
+	github.com/vmkteam/zenrpc/v2 v2.3.0
 	golang.org/x/crypto v0.42.0
 )
 
@@ -28,7 +28,7 @@ require (
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/codemodus/kace v0.5.1 // indirect
-	github.com/gabriel-vasile/mimetype v1.4.9 // indirect
+	github.com/gabriel-vasile/mimetype v1.4.10 // indirect
 	github.com/getsentry/sentry-go/echo v0.35.3 // indirect
 	github.com/go-pg/zerochecker v0.2.0 // indirect
 	github.com/go-playground/locales v0.14.1 // indirect
@@ -60,13 +60,13 @@ require (
 	github.com/vmkteam/zenrpc v1.1.1 // indirect
 	go.uber.org/atomic v1.11.0 // indirect
 	go.yaml.in/yaml/v2 v2.4.3 // indirect
-	golang.org/x/mod v0.27.0 // indirect
+	golang.org/x/mod v0.28.0 // indirect
 	golang.org/x/net v0.44.0 // indirect
 	golang.org/x/sync v0.17.0 // indirect
 	golang.org/x/sys v0.36.0 // indirect
 	golang.org/x/text v0.29.0 // indirect
-	golang.org/x/time v0.11.0 // indirect
-	golang.org/x/tools v0.36.0 // indirect
+	golang.org/x/time v0.13.0 // indirect
+	golang.org/x/tools v0.37.0 // indirect
 	google.golang.org/protobuf v1.36.9 // indirect
 	mellium.im/sasl v0.3.2 // indirect
 )

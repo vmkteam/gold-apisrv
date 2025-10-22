@@ -2,13 +2,16 @@ package parser
 
 import (
 	"go/ast"
+	"log"
 	"reflect"
 	"strings"
 )
 
 func (pi *PackageInfo) parseStructs() {
 	for _, s := range pi.Structs {
-		s.parse(pi, []string{})
+		if err := s.parse(pi, []string{}); err != nil {
+			log.Printf("Error parsing struct %s: %v", s.Name, err)
+		}
 	}
 }
 
@@ -31,6 +34,9 @@ func (s *Struct) findTypeSpec(pi *PackageInfo) bool {
 	return false
 }
 
+// parse parses package
+//
+//nolint:gocyclo,gocognit
 func (s *Struct) parse(pi *PackageInfo, parsed []string) error {
 	if !s.findTypeSpec(pi) || s.Properties != nil {
 		// can't find struct implementation
@@ -41,7 +47,7 @@ func (s *Struct) parse(pi *PackageInfo, parsed []string) error {
 	s.Properties = []Property{}
 	parsed = append(parsed, s.Name)
 	for _, field := range s.StructType.Fields.List {
-		tag := parseJsonTag(field.Tag)
+		tag := parseJSONTag(field.Tag)
 
 		// do not parse tags that ignored in json
 		if tag == "-" {
@@ -65,7 +71,7 @@ func (s *Struct) parse(pi *PackageInfo, parsed []string) error {
 					return err
 				}
 
-				if embeddedS.Properties != nil && len(embeddedS.Properties) > 0 {
+				if len(embeddedS.Properties) > 0 {
 					s.Properties = append(s.Properties, embeddedS.Properties...)
 				}
 			}
@@ -156,7 +162,7 @@ func (s *Struct) parse(pi *PackageInfo, parsed []string) error {
 	return nil
 }
 
-func parseJsonTag(bl *ast.BasicLit) string {
+func parseJSONTag(bl *ast.BasicLit) string {
 	if bl == nil {
 		return ""
 	}

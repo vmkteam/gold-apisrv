@@ -32,11 +32,13 @@ type MetadataOpts struct {
 	Services          []ServiceMetadata // List of used services
 }
 
+// ServiceMetadata describes used service.
 type ServiceMetadata struct {
 	Name string              // service name
 	Type MetadataServiceType // sync, async, external
 }
 
+// DBMetadata describes database configuration.
 type DBMetadata struct {
 	Name        string // database name
 	Connections int    // used connections
@@ -60,6 +62,7 @@ func (d *MetadataManager) Handler(c echo.Context) error {
 	return c.JSON(http.StatusOK, d.opts)
 }
 
+// RegisterMetrics tracks metrics based on specified metadata.
 func (d *MetadataManager) RegisterMetrics() {
 	appInfo := prometheus.NewGaugeVec(
 		prometheus.GaugeOpts{

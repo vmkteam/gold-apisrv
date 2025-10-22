@@ -141,7 +141,6 @@ All comments are optional.
     * [x] Input
     * [x] Output
     * [x] Codes
-    * [ ] Scopes for OAuth
 
 # Server Library Features
 

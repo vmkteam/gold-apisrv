@@ -7,9 +7,9 @@ import (
 	"apisrv/pkg/vt"
 
 	"github.com/labstack/echo/v4"
+	"github.com/vmkteam/appkit"
 	"github.com/vmkteam/vfs"
 	vfsdb "github.com/vmkteam/vfs/db"
-	zm "github.com/vmkteam/zenrpc-middleware"
 )
 
 const NSVFS = "vfs"
@@ -23,7 +23,7 @@ func (a *App) RegisterVFS(cfg vfs.Config) error {
 
 	cr := db.NewCommonRepo(a.db)
 	vfsRepo := vfsdb.NewVfsRepo(a.db)
-	a.echo.Any("/v1/vfs/upload/file", zm.EchoHandler(vt.HTTPAuthMiddleware(cr, vf.UploadHandler(vfsRepo))))
+	a.echo.Any("/v1/vfs/upload/file", appkit.EchoHandler(vt.HTTPAuthMiddleware(cr, vf.UploadHandler(vfsRepo))))
 	a.echo.Any("/v1/vfs/upload/hash", echo.WrapHandler(vt.HTTPAuthMiddleware(cr, vf.HashUploadHandler(&vfsRepo))))
 	a.echo.GET(a.cfg.VFS.WebPath, echo.WrapHandler(http.StripPrefix(a.cfg.VFS.WebPath, http.FileServer(http.Dir(a.cfg.VFS.Path)))))
 	vt.WebPath = a.cfg.VFS.WebPath

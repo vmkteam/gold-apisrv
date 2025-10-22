@@ -14,3 +14,6 @@ lint:
 
 run:
 	@go run example/main.go
+
+mod:
+	@go mod tidy
