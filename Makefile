@@ -8,7 +8,7 @@ ifeq ($(RACE),1)
 	GOFLAGS+=-race
 endif
 
-LINT_VERSION := v2.4.0
+LINT_VERSION := v2.5.0
 
 MAIN := ${NAME}/cmd/${NAME}
 

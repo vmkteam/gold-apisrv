@@ -145,7 +145,7 @@ func (pl *PropertyList) UnmarshalJSON(data []byte) error {
 	if err := json.Unmarshal(data, &v); err != nil {
 		return err
 	}
-	var plist PropertyList
+	plist := make(PropertyList, 0, len(v))
 	for k, vl := range v {
 		p := vl
 		p.Name = k

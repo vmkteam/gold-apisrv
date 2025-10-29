@@ -79,30 +79,6 @@ sensitive error data from response. It is good to use pkg/errors for stack trace
 
 Same as `WithErrorLogger`, but for slog.
 
-### XRequestID
-
-Handler for adding `X-Request-ID` header to all requests and responses.
-
-```go
-	s := http.NewServer(middleware.XRequestID(http.HandlerFunc(rpc.ServeHTTP)))
-```
-
-### EchoIPContext
-
-Echo middleware for adding client IP info to context for zenrpc middleware
-
-```go
-    e.Use(middleware.EchoIPContext())
-```
-
-### EchoSentryHubContext
-
-Echo middleware for adding sentry hub info to context for zenrpc middleware
-
-```go
-    e.Use(middleware.EchoSentryHubContext())
-```
-
 ## Examples
 
 ### Basic usage
@@ -156,29 +132,3 @@ func main() {
     // rpc.Register and server
 ```
 
-### Handler snippets
-
-```go
-// sentry init
-sentry.Init(sentry.ClientOptions{
-    Dsn:         cfg.Sentry.DSN,
-    Environment: cfg.Sentry.Environment,
-    Release:     version,
-}
-
-// sentry middleware for Echo
-e.Use(sentryecho.New(sentryecho.Options{
-    Repanic:         true,
-    WaitForDelivery: true,
-}))
-
-// register handler
-a.echo.Any("/v1/rpc/", middleware.EchoHandler(rpc))
-
----  OR ---
-
-e.Use(middleware.EchoIPContext()), middleware.EchoSentryHubContext())
-// register handler
-e.Any("/int/rpc/", echo.WrapHandler(XRequestID(rpc)))
-
-```

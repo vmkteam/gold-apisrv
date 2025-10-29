@@ -1,17 +1,28 @@
-package middleware
+package appkit
 
 import (
+	"context"
 	"net/http"
+	"slices"
+	"strings"
 
+	"github.com/getsentry/sentry-go"
 	sentryecho "github.com/getsentry/sentry-go/echo"
 	"github.com/labstack/echo/v4"
 )
 
+var (
+	defaultHeaders = []string{
+		"Authorization", "Authorization2", "Origin", "X-Requested-With", "Content-Type",
+		"Accept", "Platform", "Version", "X-Request-ID",
+	}
+)
+
 // CORS allows certain CORS headers.
-func CORS(next http.Handler) http.Handler {
+func CORS(next http.Handler, headers ...string) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Access-Control-Allow-Origin", "*")
-		w.Header().Set("Access-Control-Allow-Headers", "Authorization, Authorization2, Origin, X-Requested-With, Content-Type, Accept, Platform, Version, X-Request-ID")
+		w.Header().Set("Access-Control-Allow-Headers", strings.Join(slices.Concat(defaultHeaders, headers), ", "))
 		if r.Method == http.MethodOptions {
 			return
 		}
@@ -20,10 +31,18 @@ func CORS(next http.Handler) http.Handler {
 	})
 }
 
+// SetXRequestIDFromCtx adds X-Request-ID to request headers from context.
+func SetXRequestIDFromCtx(ctx context.Context, req *http.Request) {
+	xRequestID := XRequestIDFromContext(ctx)
+	if xRequestID != "" && req.Header.Get(headerXRequestID) == "" {
+		req.Header.Add(headerXRequestID, xRequestID)
+	}
+}
+
 // XRequestID add X-Request-ID header if not exists.
 func XRequestID(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		requestID := r.Header.Get(echo.HeaderXRequestID)
+		requestID := r.Header.Get(headerXRequestID)
 		if !isValidXRequestID(requestID) {
 			requestID = generateXRequestID()
 			r.Header.Add(echo.HeaderXRequestID, requestID)
@@ -66,7 +85,7 @@ func EchoIPContext() echo.MiddlewareFunc {
 func applySentryHubToContext(c echo.Context) echo.Context {
 	if hub := sentryecho.GetHubFromContext(c); hub != nil {
 		req := c.Request()
-		c.SetRequest(req.WithContext(NewSentryHubContext(req.Context(), hub)))
+		c.SetRequest(req.WithContext(sentry.SetHubOnContext(req.Context(), hub)))
 	}
 	return c
 }

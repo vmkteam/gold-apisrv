@@ -11,50 +11,38 @@ import (
 	"time"
 
 	"github.com/go-pg/pg/v10"
+	"github.com/vmkteam/appkit"
 	"github.com/vmkteam/zenrpc/v2"
 )
 
 const (
-	debugIDCtx  contextKey = "debugID"
-	sqlGroupCtx contextKey = "sqlGroup"
-
-	emptyDebugID   = 0
 	eventStartedAt = "queryStartedAt"
 )
 
 type AllowDebugFunc func(*http.Request) bool
 
+// DebugIDFromContext returns debug id from context.
+// Deprecated: use appkit.DebugIDFromContext.
 func DebugIDFromContext(ctx context.Context) uint64 {
-	if ctx == nil {
-		return emptyDebugID
-	}
-
-	if id, ok := ctx.Value(debugIDCtx).(uint64); ok {
-		return id
-	}
-
-	return emptyDebugID
+	return appkit.DebugIDFromContext(ctx)
 }
 
 // NewDebugIDContext creates new context with debug ID.
+// Deprecated: use appkit.NewDebugIDContext.
 func NewDebugIDContext(ctx context.Context, debugID uint64) context.Context {
-	return context.WithValue(ctx, debugIDCtx, debugID)
+	return appkit.NewDebugIDContext(ctx, debugID)
 }
 
 // NewSQLGroupContext creates new context with SQL Group for debug SQL logging.
+// Deprecated: use appkit.NewSQLGroupContext.
 func NewSQLGroupContext(ctx context.Context, group string) context.Context {
-	groups, _ := ctx.Value(sqlGroupCtx).(string)
-	if groups != "" {
-		groups += ">"
-	}
-	groups += group
-	return context.WithValue(ctx, sqlGroupCtx, groups)
+	return appkit.NewSQLGroupContext(ctx, group)
 }
 
 // SQLGroupFromContext returns sql group from context.
+// Deprecated: use appkit.SQLGroupFromContext.
 func SQLGroupFromContext(ctx context.Context) string {
-	r, _ := ctx.Value(sqlGroupCtx).(string)
-	return r
+	return appkit.SQLGroupFromContext(ctx)
 }
 
 // WithTiming adds timings in JSON-RPC 2.0 Response via `extensions` field (not in spec).
@@ -132,7 +120,7 @@ func WithSQLLogger(db *pg.DB, isDevel bool, allowDebugFunc, allowSQLDebugFunc Al
 			}
 
 			debugID := ql.NextID()
-			ctx = NewDebugIDContext(ctx, debugID)
+			ctx = appkit.NewDebugIDContext(ctx, debugID)
 			ql.Push(debugID)
 
 			resp := h(ctx, method, params)
@@ -192,7 +180,7 @@ func (ql *sqlQueryLogger) BeforeQuery(ctx context.Context, event *pg.QueryEvent)
 		event.Stash = make(map[interface{}]interface{})
 	}
 
-	if DebugIDFromContext(ctx) != emptyDebugID {
+	if appkit.DebugIDFromContext(ctx) != appkit.EmptyDebugID {
 		event.Stash[eventStartedAt] = time.Now()
 	}
 
@@ -200,8 +188,8 @@ func (ql *sqlQueryLogger) BeforeQuery(ctx context.Context, event *pg.QueryEvent)
 }
 
 func (ql *sqlQueryLogger) AfterQuery(ctx context.Context, event *pg.QueryEvent) error {
-	debugID := DebugIDFromContext(ctx)
-	if debugID == emptyDebugID {
+	debugID := appkit.DebugIDFromContext(ctx)
+	if debugID == appkit.EmptyDebugID {
 		return nil
 	}
 
@@ -221,7 +209,7 @@ func (ql *sqlQueryLogger) AfterQuery(ctx context.Context, event *pg.QueryEvent) 
 		}
 	}
 
-	sq.Group = strings.Trim(SQLGroupFromContext(ctx), ">")
+	sq.Group = strings.Trim(appkit.SQLGroupFromContext(ctx), ">")
 
 	ql.Store(debugID, sq)
 

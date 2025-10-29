@@ -11,12 +11,25 @@ import (
 )
 
 type Printer interface {
-	Printf(string, ...interface{})
+	Printf(msg string, args ...any)
 }
 
-// ServeHTTP process JSON-RPC 2.0 requests via HTTP.
-// http://www.simple-is-better.org/json-rpc/transport_http.html
-func (s Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+// printErr prints error if not nil.
+func (s *Server) printErr(msg string, err error) {
+	if err != nil {
+		s.printf("%s: %v", msg, err)
+	}
+}
+
+// httpError writes http header with status text.
+func (s *Server) httpError(w http.ResponseWriter, code int) {
+	http.Error(w, http.StatusText(code), code)
+}
+
+// ServeHTTP processes JSON-RPC 2.0 requests via HTTP.
+// It handles CORS, SMD schema requests, and standard JSON-RPC calls.
+// Implements http.Handler interface for the Server type.
+func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// check for CORS GET & POST requests
 	if s.options.AllowCORS {
 		w.Header().Set("Access-Control-Allow-Origin", "*")
@@ -24,8 +37,11 @@ func (s Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	// check for smd parameter and server settings and write schema if all conditions met,
 	if _, ok := r.URL.Query()["smd"]; ok && s.options.ExposeSMD && r.Method == http.MethodGet {
-		b, _ := json.Marshal(s.SMD())
-		w.Write(b)
+		b, err := json.Marshal(s.SMD())
+		s.printErr("json marshal", err)
+
+		_, err = w.Write(b)
+		s.printErr("response write", err)
 		return
 	}
 
@@ -41,22 +57,22 @@ func (s Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	// check for content-type and POST method.
 	if !s.options.DisableTransportChecks {
-		if !strings.HasPrefix(r.Header.Get("Content-Type"), contentTypeJSON) {
-			w.WriteHeader(http.StatusUnsupportedMediaType)
+		switch {
+		case !strings.HasPrefix(r.Header.Get("Content-Type"), contentTypeJSON):
+			s.httpError(w, http.StatusUnsupportedMediaType)
 			return
-		} else if r.Method == http.MethodGet {
-			w.WriteHeader(http.StatusMethodNotAllowed)
+		case r.Method == http.MethodGet:
+			s.httpError(w, http.StatusMethodNotAllowed)
 			return
-		} else if r.Method != http.MethodPost {
+		case r.Method != http.MethodPost:
 			// skip rpc calls
 			return
 		}
 	}
 
 	// ok, method is POST and content-type is application/json, process body
+	var data any
 	b, err := io.ReadAll(r.Body)
-	var data interface{}
-
 	if err != nil {
 		s.printf("read request body failed with err=%v", err)
 		data = NewResponseError(nil, ParseError, "", nil)
@@ -69,28 +85,32 @@ func (s Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// set headers
-	w.Header().Set("Content-Type", contentTypeJSON)
-
 	// marshals data and write it to client.
-	if resp, err := json.Marshal(data); err != nil {
-		s.printf("marshal json response failed with err=%v", err)
-		w.WriteHeader(http.StatusInternalServerError)
-	} else if _, err := w.Write(resp); err != nil {
-		s.printf("write response failed with err=%v", err)
-		w.WriteHeader(http.StatusInternalServerError)
+	resp, err := json.Marshal(data)
+	s.printErr("json marshal", err)
+	if err != nil {
+		s.httpError(w, http.StatusInternalServerError)
+	}
+
+	// write response
+	w.Header().Set("Content-Type", contentTypeJSON)
+	if _, err = w.Write(resp); err != nil {
+		s.printErr("response write", err)
+		s.httpError(w, http.StatusInternalServerError)
 	}
 }
 
-// ServeWS processes JSON-RPC 2.0 requests via Gorilla WebSocket.
-// https://github.com/gorilla/websocket/blob/master/examples/echo/
-func (s Server) ServeWS(w http.ResponseWriter, r *http.Request) {
+// ServeWS processes JSON-RPC 2.0 requests via WebSocket using Gorilla WebSocket.
+// It maintains a persistent connection and handles bidirectional JSON-RPC communication.
+func (s *Server) ServeWS(w http.ResponseWriter, r *http.Request) {
 	c, err := s.options.Upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		s.printf("upgrade connection failed with err=%v", err)
 		return
 	}
-	defer c.Close()
+	defer func(c *websocket.Conn) {
+		s.printErr("close websocket", c.Close())
+	}(c)
 
 	for {
 		mt, message, err := c.ReadMessage()
@@ -106,23 +126,26 @@ func (s Server) ServeWS(w http.ResponseWriter, r *http.Request) {
 		}
 
 		data, err := s.Do(NewRequestContext(r.Context(), r), message)
+		s.printErr("marshal json", err)
 		if err != nil {
-			s.printf("marshal json response failed with err=%v", err)
-			c.WriteControl(websocket.CloseInternalServerErr, nil, time.Time{})
+			e := c.WriteControl(websocket.CloseInternalServerErr, nil, time.Time{})
+			s.printErr("write control", e)
 			break
 		}
 
 		if err = c.WriteMessage(mt, data); err != nil {
 			s.printf("write response failed with err=%v", err)
-			c.WriteControl(websocket.CloseInternalServerErr, nil, time.Time{})
+			e := c.WriteControl(websocket.CloseInternalServerErr, nil, time.Time{})
+			s.printErr("write control", e)
 			break
 		}
 	}
 }
 
-// SMDBoxHandler is a handler for SMDBox web app.
-func SMDBoxHandler(w http.ResponseWriter, r *http.Request) {
-	w.Write([]byte(`
+// SMDBoxHandler serves the SMDBox web application interface.
+// This provides a web-based interface for exploring and testing the JSON-RPC API.
+func SMDBoxHandler(w http.ResponseWriter, _ *http.Request) {
+	_, _ = w.Write([]byte(`
 <!DOCTYPE html>
 <html lang="en">
 <head>

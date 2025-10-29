@@ -2,8 +2,10 @@ package main
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"go/format"
+	"log"
 	"os"
 	"runtime/debug"
 	"time"
@@ -17,9 +19,11 @@ const (
 )
 
 func main() {
+	log.SetFlags(log.Lshortfile)
+
 	start := time.Now()
 
-	appVersion()
+	parser.GeneratorVersion = appVersion()
 	fmt.Printf("Generator version: %s\n", parser.GeneratorVersion)
 
 	var filename string
@@ -30,52 +34,47 @@ func main() {
 	}
 
 	if filename == "" {
-		fmt.Fprintln(os.Stderr, "File path is empty")
-		os.Exit(1)
+		exitOnErr(errors.New("no filename specified"))
 	}
 
 	fmt.Printf("Entrypoint: %s\n", filename)
 
 	// create package info
 	pi, err := parser.NewPackageInfo(filename)
-	if err != nil {
-		printError(err)
-		os.Exit(1)
-	}
-
-	outputFileName := pi.OutputFilename()
+	exitWithErr(err)
 
 	// remove output file if it already exists
-	if _, err := os.Stat(outputFileName); err == nil {
-		if err := os.Remove(outputFileName); err != nil {
-			printError(err)
-			os.Exit(1)
-		}
+	outputFileName := pi.OutputFilename()
+	if _, err = os.Stat(outputFileName); err == nil {
+		err = os.Remove(outputFileName)
+		exitWithErr(err)
 	}
 
-	if err := pi.Parse(filename); err != nil {
-		printError(err)
-		os.Exit(1)
-	}
+	// parse file
+	err = pi.Parse(filename)
+	exitWithErr(err)
 
 	if len(pi.Services) == 0 {
-		fmt.Fprintln(os.Stderr, "Services not found")
-		os.Exit(1)
+		exitOnErr(fmt.Errorf("no services found in %s", filename))
 	}
 
-	if err := generateFile(outputFileName, pi); err != nil {
-		printError(err)
-		os.Exit(1)
-	}
+	// generate file
+	err = generateFile(outputFileName, pi)
+	exitWithErr(err)
 
 	fmt.Printf("Generated: %s\n", outputFileName)
-	fmt.Printf("Duration: %dms\n", int64(time.Since(start)/time.Millisecond))
+	fmt.Printf("Duration: %dms\n", time.Since(start).Milliseconds())
 	fmt.Println()
 	fmt.Print(pi)
 	fmt.Println()
 }
 
-func printError(err error) {
+// exitWithErr logs the error and exits the program if error is not nil with additional information.
+func exitWithErr(err error) {
+	if err == nil {
+		return
+	}
+
 	// print error to stderr
 	fmt.Fprintf(os.Stderr, "Error: %s\n", err)
 
@@ -84,6 +83,8 @@ func printError(err error) {
 	fmt.Printf("\t%s\n", openIssueURL)
 	fmt.Println("For more information, see:")
 	fmt.Printf("\t%s\n\n", githubURL)
+
+	os.Exit(1)
 }
 
 func generateFile(outputFileName string, pi *parser.PackageInfo) error {
@@ -91,10 +92,13 @@ func generateFile(outputFileName string, pi *parser.PackageInfo) error {
 	if err != nil {
 		return err
 	}
-	defer file.Close()
+	defer func(file *os.File) {
+		e := file.Close()
+		exitOnErr(e)
+	}(file)
 
-	output := new(bytes.Buffer)
-	if err := serviceTemplate.Execute(output, pi); err != nil {
+	var output bytes.Buffer
+	if err = serviceTemplate.Execute(&output, pi); err != nil {
 		return err
 	}
 
@@ -103,18 +107,37 @@ func generateFile(outputFileName string, pi *parser.PackageInfo) error {
 		return err
 	}
 
-	if _, err = file.Write(source); err != nil {
-		return err
-	}
-
-	return nil
+	_, err = file.Write(source)
+	return err
 }
 
-func appVersion() {
+func appVersion() string {
+	result := "devel"
 	info, ok := debug.ReadBuildInfo()
 	if !ok {
-		return
+		return result
 	}
 
-	parser.GeneratorVersion = info.Main.Version
+	if info.Main.Version != "" {
+		return info.Main.Version
+	}
+
+	for _, v := range info.Settings {
+		if v.Key == "vcs.revision" {
+			result = v.Value
+		}
+	}
+
+	if len(result) > 8 {
+		result = result[:8]
+	}
+
+	return result
+}
+
+// exitOnErr logs the error and exits the program if error is not nil.
+func exitOnErr(err error) {
+	if err != nil {
+		log.Fatal("generation failed: ", err)
+	}
 }

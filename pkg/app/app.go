@@ -41,7 +41,7 @@ type App struct {
 	dbc     *pg.DB
 	mon     *monitor.Monitor
 	echo    *echo.Echo
-	vtsrv   zenrpc.Server
+	vtsrv   *zenrpc.Server
 }
 
 func New(appName string, sl embedlog.Logger, cfg Config, db db.DB, dbc *pg.DB) *App {

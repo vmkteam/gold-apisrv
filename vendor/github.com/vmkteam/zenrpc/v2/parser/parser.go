@@ -10,10 +10,10 @@ import (
 	"unicode"
 	"unicode/utf8"
 
+	"github.com/vmkteam/zenrpc/v2/smd"
+
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
-
-	"github.com/vmkteam/zenrpc/v2/smd"
 )
 
 const (
@@ -49,6 +49,7 @@ type PackageInfo struct {
 
 	Services []*Service
 
+	//nolint:staticcheck
 	Scopes  map[string][]*ast.Scope // key - import name, value - array of scopes from each package file
 	Structs map[string]*Struct
 	Imports []*ast.ImportSpec
@@ -90,7 +91,7 @@ type Arg struct {
 	Name            string
 	Type            string
 	CapitalName     string
-	JsonName        string
+	JSONName        string
 	HasStar         bool
 	HasDefaultValue bool
 	Description     string // from magic comment
@@ -156,6 +157,7 @@ func NewPackageInfo(filename string) (*PackageInfo, error) {
 		GeneratorVersion: GeneratorVersion,
 		Services:         []*Service{},
 
+		//nolint:staticcheck
 		Scopes:  make(map[string][]*ast.Scope),
 		Structs: make(map[string]*Struct),
 		Imports: []*ast.ImportSpec{},
@@ -165,7 +167,7 @@ func NewPackageInfo(filename string) (*PackageInfo, error) {
 	}, nil
 }
 
-// ParseFiles parse all files associated with package from original file
+// Parse parses all files associated with package from original file
 func (pi *PackageInfo) Parse(filename string) error {
 	pfs, err := GetDependenciesAstFiles(filename)
 	if err != nil {
@@ -294,7 +296,7 @@ func (pi *PackageInfo) parseMethods(f *ast.File, packagePath string) error {
 	return nil
 }
 
-func (pi PackageInfo) String() string {
+func (pi *PackageInfo) String() string {
 	result := fmt.Sprintf("Generated services for package %s:\n", pi.PackageName)
 	for _, s := range pi.Services {
 		result += fmt.Sprintf("- %s\n", s.Name)
@@ -344,7 +346,7 @@ func (pi PackageInfo) String() string {
 	return result
 }
 
-func (pi PackageInfo) OutputFilename() string {
+func (pi *PackageInfo) OutputFilename() string {
 	return filepath.Join(pi.Dir, pi.PackageName+GenerateFileSuffix)
 }
 
@@ -415,7 +417,7 @@ func (m *Method) parseArguments(pi *PackageInfo, fdecl *ast.FuncDecl, serviceNam
 			for _, s := range serviceNames {
 				methods = append(methods, s+"."+m.Name)
 			}
-			return fmt.Errorf("Can't parse type of argument %s in %s", strings.Join(fields, ", "), strings.Join(methods, ", "))
+			return fmt.Errorf("can't parse type of argument %s in %s", strings.Join(fields, ", "), strings.Join(methods, ", "))
 		}
 
 		if typeName == contextTypeName {
@@ -450,7 +452,7 @@ func (m *Method) parseArguments(pi *PackageInfo, fdecl *ast.FuncDecl, serviceNam
 				Name:        name.Name,
 				Type:        typeName,
 				CapitalName: c.String(name.Name),
-				JsonName:    lowerFirst(name.Name),
+				JSONName:    lowerFirst(name.Name),
 				HasStar:     hasStar,
 				SMDType: SMDType{
 					Type:      smdType,
@@ -488,7 +490,7 @@ func (m *Method) parseReturns(pi *PackageInfo, fdecl *ast.FuncDecl, serviceNames
 		// parse type
 		typeName := parseType(field.Type)
 		if typeName == "" {
-			return fmt.Errorf("Can't parse type of return value in %s on position %d", methods(), len(m.Returns)+1)
+			return fmt.Errorf("can't parse type of return value in %s on position %d", methods(), len(m.Returns)+1)
 		}
 
 		var fieldName string
@@ -545,7 +547,7 @@ func (m *Method) parseReturns(pi *PackageInfo, fdecl *ast.FuncDecl, serviceNames
 
 // parseComments parse method comments and
 // fill default values, description for params and user errors map
-func (m *Method) parseComments(doc *ast.CommentGroup, pi *PackageInfo) {
+func (m *Method) parseComments(doc *ast.CommentGroup, _ *PackageInfo) {
 	if doc == nil {
 		return
 	}
@@ -687,7 +689,8 @@ func parseSMDType(expr ast.Expr) (string, string) {
 	case *ast.StarExpr:
 		return parseSMDType(v.X)
 	case *ast.SelectorExpr:
-		//save time.Time as string type in SMD
+		// save time.Time as string type in SMD
+		//nolint:errcheck
 		if v.X.(*ast.Ident).Name == "time" && v.Sel.Name == "Time" {
 			return SmdString, ""
 		}
@@ -726,13 +729,16 @@ func parseSMDType(expr ast.Expr) (string, string) {
 }
 
 // parseStruct find struct in type for display in SMD
+//
+//nolint:gocognit
 func parseStruct(expr ast.Expr) *Struct {
 	switch v := expr.(type) {
 	case *ast.StarExpr:
 		return parseStruct(v.X)
 	case *ast.SelectorExpr:
+		//nolint:errcheck
 		namespace := v.X.(*ast.Ident).Name
-		//skip time.Time struct parsing
+		// skip time.Time struct parsing
 		if namespace == "time" && v.Sel.Name == "Time" {
 			return nil
 		}
@@ -824,5 +830,5 @@ func lowerFirst(s string) string {
 }
 
 func hasStar(s string) bool {
-	return s[:1] == "*"
+	return len(s) > 0 && s[:1] == "*"
 }

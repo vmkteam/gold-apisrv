@@ -40,7 +40,7 @@ func httpAsRPCError(code int) *zenrpc.Error {
 }
 
 // New returns new zenrpc Server.
-func New(dbo db.DB, logger embedlog.Logger, isDevel bool) zenrpc.Server {
+func New(dbo db.DB, logger embedlog.Logger, isDevel bool) *zenrpc.Server {
 	rpc := zenrpc.NewServer(zenrpc.Options{
 		ExposeSMD: true,
 		AllowCORS: true,

@@ -12,7 +12,6 @@ import (
 	sentryecho "github.com/getsentry/sentry-go/echo"
 	"github.com/labstack/echo/v4"
 	"github.com/prometheus/client_golang/prometheus"
-	zm "github.com/vmkteam/zenrpc-middleware"
 )
 
 const DefaultServerName = "default"
@@ -32,7 +31,7 @@ func NewEcho() *echo.Echo {
 	}))
 
 	// use zenrpc middlewares
-	e.Use(zm.EchoIPContext(), zm.EchoSentryHubContext())
+	e.Use(EchoIPContext(), EchoSentryHubContext())
 
 	return e
 }

@@ -1,7 +1,7 @@
 package parser
 
 import (
-	"fmt"
+	"errors"
 	"go/ast"
 	"path"
 
@@ -60,7 +60,7 @@ func EntryPointPackageName(filename string) (string, string, error) {
 	for _, pack := range pkgs {
 		return pack.Name, pack.PkgPath, nil
 	}
-	return "", "", fmt.Errorf("package not found for entry point")
+	return "", "", errors.New("package not found for entry point")
 }
 
 func loadPackage(path string) ([]*packages.Package, error) {

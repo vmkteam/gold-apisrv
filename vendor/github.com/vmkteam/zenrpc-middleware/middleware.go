@@ -5,40 +5,26 @@ import (
 	"encoding/json"
 
 	"github.com/labstack/echo/v4"
+	"github.com/vmkteam/appkit"
 	"github.com/vmkteam/zenrpc/v2"
 )
 
 const (
-	isDevelCtx      contextKey = "isDevel"
-	ctxPlatformKey  contextKey = "platform"
-	ctxVersionKey   contextKey = "version"
-	ctxMethodKey    contextKey = "method"
-	ctxIPKey        contextKey = "ip"
-	ctxUserAgentKey contextKey = "userAgent"
-	ctxCountryKey   contextKey = "country"
-
-	ctxNotificationKey = "JSONRPC2-Notification"
-
 	// DefaultServerName is a global default name, mostly used for metrics.
 	DefaultServerName = ""
-
-	maxUserAgentLength = 2048
-	maxVersionLength   = 64
-	maxCountryLength   = 16
 )
 
 type (
-	contextKey string
-	Printf     func(format string, v ...interface{})
-	Print      func(ctx context.Context, msg string, args ...any)
-	LogAttrs   func(ctx context.Context, r zenrpc.Response) []any
+	Printf   func(format string, v ...interface{})
+	Print    func(ctx context.Context, msg string, args ...any)
+	LogAttrs func(ctx context.Context, r zenrpc.Response) []any
 )
 
 // WithDevel sets bool flag to context for detecting development environment.
 func WithDevel(isDevel bool) zenrpc.MiddlewareFunc {
 	return func(h zenrpc.InvokeFunc) zenrpc.InvokeFunc {
 		return func(ctx context.Context, method string, params json.RawMessage) zenrpc.Response {
-			ctx = NewIsDevelContext(ctx, isDevel)
+			ctx = appkit.NewIsDevelContext(ctx, isDevel)
 			return h(ctx, method, params)
 		}
 	}
@@ -58,12 +44,12 @@ func WithHeaders() zenrpc.MiddlewareFunc {
 	return func(h zenrpc.InvokeFunc) zenrpc.InvokeFunc {
 		return func(ctx context.Context, method string, params json.RawMessage) zenrpc.Response {
 			if req, ok := zenrpc.RequestFromContext(ctx); ok && req != nil {
-				ctx = NewUserAgentContext(ctx, req.UserAgent())
-				ctx = NewPlatformContext(ctx, req.Header.Get("Platform"))
-				ctx = NewVersionContext(ctx, req.Header.Get("Version"))
-				ctx = NewXRequestIDContext(ctx, req.Header.Get(echo.HeaderXRequestID))
-				ctx = NewCountryContext(ctx, req.Header.Get("X-Country"))
-				ctx = NewMethodContext(ctx, method)
+				ctx = appkit.NewUserAgentContext(ctx, req.UserAgent())
+				ctx = appkit.NewPlatformContext(ctx, req.Header.Get("Platform"))
+				ctx = appkit.NewVersionContext(ctx, req.Header.Get("Version"))
+				ctx = appkit.NewXRequestIDContext(ctx, req.Header.Get(echo.HeaderXRequestID))
+				ctx = appkit.NewCountryContext(ctx, req.Header.Get("X-Country"))
+				ctx = appkit.NewMethodContext(ctx, method)
 			}
 			return h(ctx, method, params)
 		}
@@ -71,102 +57,99 @@ func WithHeaders() zenrpc.MiddlewareFunc {
 }
 
 // NewIPContext creates new context with IP.
+// Deprecated: use appkit.NewIPContext.
 func NewIPContext(ctx context.Context, ip string) context.Context {
-	return context.WithValue(ctx, ctxIPKey, ip)
+	return appkit.NewIPContext(ctx, ip)
 }
 
 // IPFromContext returns IP from context.
+// Deprecated: use appkit.IPFromContext.
 func IPFromContext(ctx context.Context) string {
-	r, _ := ctx.Value(ctxIPKey).(string)
-	return r
+	return appkit.IPFromContext(ctx)
 }
 
 // NewUserAgentContext creates new context with User-Agent.
+// Deprecated: use appkit.NewUserAgentContext.
 func NewUserAgentContext(ctx context.Context, ua string) context.Context {
-	return context.WithValue(ctx, ctxUserAgentKey, cutString(ua, maxUserAgentLength))
+	return appkit.NewUserAgentContext(ctx, ua)
 }
 
 // UserAgentFromContext returns userAgent from context.
+// Deprecated: use appkit.UserAgentFromContext.
 func UserAgentFromContext(ctx context.Context) string {
-	r, _ := ctx.Value(ctxUserAgentKey).(string)
-	return r
+	return appkit.UserAgentFromContext(ctx)
 }
 
 // NewNotificationContext creates new context with JSONRPC2 notification flag.
+// Deprecated: use appkit.NewNotificationContext.
 func NewNotificationContext(ctx context.Context) context.Context {
-	//nolint:staticcheck // must be global
-	return context.WithValue(ctx, ctxNotificationKey, true)
+	return appkit.NewNotificationContext(ctx)
 }
 
 // NotificationFromContext returns JSONRPC2 notification flag from context.
+// Deprecated: use appkit.NotificationFromContext.
 func NotificationFromContext(ctx context.Context) bool {
-	r, _ := ctx.Value(ctxNotificationKey).(bool)
-	return r
+	return appkit.NotificationFromContext(ctx)
 }
 
 // NewIsDevelContext creates new context with isDevel flag.
+// Deprecated: use appkit.NewIsDevelContext.
 func NewIsDevelContext(ctx context.Context, isDevel bool) context.Context {
-	return context.WithValue(ctx, isDevelCtx, isDevel)
+	return appkit.NewIsDevelContext(ctx, isDevel)
 }
 
 // IsDevelFromContext returns isDevel flag from context.
+// Deprecated: use appkit.IsDevelFromContext.
 func IsDevelFromContext(ctx context.Context) bool {
-	if isDevel, ok := ctx.Value(isDevelCtx).(bool); ok {
-		return isDevel
-	}
-	return false
+	return appkit.IsDevelFromContext(ctx)
 }
 
 // NewPlatformContext creates new context with platform.
+// Deprecated: use appkit.NewPlatformContext.
 func NewPlatformContext(ctx context.Context, platform string) context.Context {
-	return context.WithValue(ctx, ctxPlatformKey, cutString(platform, 64))
+	return appkit.NewPlatformContext(ctx, platform)
 }
 
 // PlatformFromContext returns platform from context.
+// Deprecated: use appkit.PlatformFromContext.
 func PlatformFromContext(ctx context.Context) string {
-	r, _ := ctx.Value(ctxPlatformKey).(string)
-	return r
+	return appkit.PlatformFromContext(ctx)
 }
 
 // NewVersionContext creates new context with version.
+// Deprecated: use appkit.NewVersionContext.
 func NewVersionContext(ctx context.Context, version string) context.Context {
-	return context.WithValue(ctx, ctxVersionKey, cutString(version, maxVersionLength))
+	return appkit.NewVersionContext(ctx, version)
 }
 
 // VersionFromContext returns version from context.
+// Deprecated: use appkit.VersionFromContext.
 func VersionFromContext(ctx context.Context) string {
-	r, _ := ctx.Value(ctxVersionKey).(string)
-	return r
+	return appkit.VersionFromContext(ctx)
 }
 
 // NewCountryContext creates new context with country.
+// Deprecated: use appkit.NewCountryContext.
 func NewCountryContext(ctx context.Context, country string) context.Context {
-	return context.WithValue(ctx, ctxCountryKey, cutString(country, maxCountryLength))
+	return appkit.NewCountryContext(ctx, country)
 }
 
 // CountryFromContext returns country from context.
+// Deprecated: use appkit.CountryFromContext.
 func CountryFromContext(ctx context.Context) string {
-	r, _ := ctx.Value(ctxCountryKey).(string)
-	return r
+	return appkit.CountryFromContext(ctx)
 }
 
 // NewMethodContext creates new context with Method.
+// Deprecated: use appkit.NewMethodContext.
 func NewMethodContext(ctx context.Context, method string) context.Context {
-	return context.WithValue(ctx, ctxMethodKey, method)
+	return appkit.NewMethodContext(ctx, method)
 }
 
 // MethodFromContext returns Method from context.
+// Deprecated: use appkit.MethodFromContext.
 func MethodFromContext(ctx context.Context) string {
-	r, _ := ctx.Value(ctxMethodKey).(string)
-	return r
-}
-
-// cutString cuts string with given length.
-func cutString(s string, length int) string {
-	if len(s) > length {
-		return s[:length]
-	}
-	return s
+	return appkit.MethodFromContext(ctx)
 }
 
 // fullMethodName returns namespace.method or serverName.namespace.method.

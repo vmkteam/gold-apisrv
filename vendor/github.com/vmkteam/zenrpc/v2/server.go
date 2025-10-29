@@ -10,15 +10,15 @@ import (
 	"sync"
 	"unicode"
 
-	"github.com/gorilla/websocket"
-
 	"github.com/vmkteam/zenrpc/v2/smd"
+
+	"github.com/gorilla/websocket"
 )
 
 type contextKey string
 
 const (
-	// defaultBatchMaxLen is default value of BatchMaxLen option in rpc Server options.
+	// defaultBatchMaxLen is default value of BatchMaxLen option in RPC Server options.
 	defaultBatchMaxLen = 10
 
 	// defaultTargetURL is default value for SMD target url.
@@ -30,7 +30,10 @@ const (
 	// context key for namespace.
 	namespaceKey contextKey = "namespace"
 
-	// context key for ID.
+	// batchMethods key for all batch methods in request.
+	batchMethodsKey contextKey = "batchMethods"
+
+	// IDKey context key for ID.
 	IDKey contextKey = "id"
 
 	// contentTypeJSON is default content type for HTTP transport.
@@ -85,8 +88,8 @@ type Server struct {
 }
 
 // NewServer returns new JSON-RPC 2.0 Server.
-func NewServer(opts Options) Server {
-	// For safety reasons we do not allowing to much requests in batch
+func NewServer(opts Options) *Server {
+	// For safety reasons we do not allowing too much requests in batch
 	if opts.BatchMaxLen == 0 {
 		opts.BatchMaxLen = defaultBatchMaxLen
 	}
@@ -101,7 +104,7 @@ func NewServer(opts Options) Server {
 		}
 	}
 
-	return Server{
+	return &Server{
 		services: make(map[string]Invoker),
 		options:  opts,
 	}
@@ -129,7 +132,7 @@ func (s *Server) SetLogger(printer Printer) {
 	s.logger = printer
 }
 
-// process process JSON-RPC 2.0 message, invokes correct method for namespace and returns JSON-RPC 2.0 Response.
+// process processes JSON-RPC 2.0 message, invokes correct method for namespace and returns JSON-RPC 2.0 Response.
 func (s *Server) process(ctx context.Context, message json.RawMessage) interface{} {
 	var requests []Request
 	// parsing batch requests
@@ -145,11 +148,16 @@ func (s *Server) process(ctx context.Context, message json.RawMessage) interface
 		return NewResponseError(nil, ParseError, "", nil)
 	}
 
-	// if there no requests to process
+	// if there are no requests to process
 	if len(requests) == 0 {
 		return NewResponseError(nil, InvalidRequest, "", nil)
 	} else if len(requests) > s.options.BatchMaxLen {
 		return NewResponseError(nil, InvalidRequest, "", "max requests length in batch exceeded")
+	}
+
+	// set batch methods in request
+	if batch {
+		ctx = newBatchMethodsContext(ctx, methodsFromRequests(requests))
 	}
 
 	// process single request: if request single and not notification  - just run it and return result
@@ -166,7 +174,7 @@ func (s *Server) process(ctx context.Context, message json.RawMessage) interface
 }
 
 // processBatch process batch requests with context.
-func (s Server) processBatch(ctx context.Context, requests []Request) []Response {
+func (s *Server) processBatch(ctx context.Context, requests []Request) []Response {
 	reqLen := len(requests)
 
 	// running requests in batch asynchronously
@@ -207,8 +215,8 @@ func (s Server) processBatch(ctx context.Context, requests []Request) []Response
 }
 
 // processRequest processes a single request in service invoker.
-func (s Server) processRequest(ctx context.Context, req Request) Response {
-	// checks for json-rpc version and method
+func (s *Server) processRequest(ctx context.Context, req Request) Response {
+	// checks for JSON-RPC version and method
 	if req.Version != Version || req.Method == "" {
 		return NewResponseError(req.ID, InvalidRequest, "", nil)
 	}
@@ -249,18 +257,27 @@ func (s Server) processRequest(ctx context.Context, req Request) Response {
 }
 
 // Do process JSON-RPC 2.0 request, invokes correct method for namespace and returns JSON-RPC 2.0 Response or marshaller error.
-func (s Server) Do(ctx context.Context, req []byte) ([]byte, error) {
+func (s *Server) Do(ctx context.Context, req []byte) ([]byte, error) {
 	return json.Marshal(s.process(ctx, req))
 }
 
-func (s Server) printf(format string, v ...interface{}) {
+func (s *Server) printf(format string, v ...any) {
 	if s.logger != nil {
 		s.logger.Printf(format, v...)
 	}
 }
 
+func methodsFromRequests(reqs []Request) []string {
+	result := make([]string, 0, len(reqs))
+	for i := range reqs {
+		result = append(result, strings.ToLower(reqs[i].Method))
+	}
+
+	return result
+}
+
 // SMD returns Service Mapping Description object with all registered methods.
-func (s Server) SMD() smd.Schema {
+func (s *Server) SMD() smd.Schema {
 	sch := smd.Schema{
 		Transport:   "POST",
 		Envelope:    "JSON-RPC-2.0",
@@ -286,7 +303,7 @@ func (s Server) SMD() smd.Schema {
 	return sch
 }
 
-// IsArray checks json message if it array or object.
+// IsArray checks json message if it arrays or object.
 func IsArray(message json.RawMessage) bool {
 	for _, b := range message {
 		if unicode.IsSpace(rune(b)) {
@@ -338,8 +355,8 @@ func ConvertToObject(keys []string, params json.RawMessage) (json.RawMessage, er
 				return nil, err
 			}
 		}
-
 	}
+
 	if _, err := buf.WriteString(`}`); err != nil {
 		return nil, err
 	}
@@ -380,6 +397,20 @@ func newIDContext(ctx context.Context, id *json.RawMessage) context.Context {
 // IDFromContext returns request ID from context.
 func IDFromContext(ctx context.Context) *json.RawMessage {
 	if r, ok := ctx.Value(IDKey).(*json.RawMessage); ok {
+		return r
+	}
+
+	return nil
+}
+
+// newBatchMethodsContext creates new context with current batch methods.
+func newBatchMethodsContext(ctx context.Context, methods []string) context.Context {
+	return context.WithValue(ctx, batchMethodsKey, methods)
+}
+
+// BatchMethodsFromContext returns batch method's from context.
+func BatchMethodsFromContext(ctx context.Context) []string {
+	if r, ok := ctx.Value(batchMethodsKey).([]string); ok {
 		return r
 	}
 
