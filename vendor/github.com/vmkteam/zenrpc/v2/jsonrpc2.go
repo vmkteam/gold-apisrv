@@ -2,6 +2,7 @@ package zenrpc
 
 import (
 	"encoding/json"
+	"errors"
 )
 
 const (
@@ -48,7 +49,7 @@ func ErrorMsg(code int) string {
 	return errorMessages[code]
 }
 
-// Request is a json structure for json-rpc request to server. See:
+// Request is a json structure for JSON-RPC request to server. See:
 // http://www.jsonrpc.org/specification#request_object
 //
 //easyjson:json
@@ -74,7 +75,7 @@ type Request struct {
 	Namespace string `json:"-"`
 }
 
-// Response is json structure for json-rpc response from server. See:
+// Response is json structure for JSON-RPC response from server. See:
 // http://www.jsonrpc.org/specification#response_object
 //
 //easyjson:json
@@ -97,12 +98,29 @@ type Response struct {
 	// The value for this member MUST be an Object as defined in section 5.1.
 	Error *Error `json:"error,omitempty"`
 
-	// Extensions is additional field for extending standard response. It could be useful for tracing, method execution, etc...
-	Extensions map[string]interface{} `json:"extensions,omitempty"`
+	// Extensions are additional field for extending standard response. It could be useful for tracing, method execution, etc...
+	Extensions map[string]any `json:"extensions,omitempty"`
+}
+
+// NewResponseError returns new Response with Error object.
+func NewResponseError(id *json.RawMessage, code int, message string, data any) Response {
+	if message == "" {
+		message = ErrorMsg(code)
+	}
+
+	return Response{
+		Version: Version,
+		ID:      id,
+		Error: &Error{
+			Code:    code,
+			Message: message,
+			Data:    data,
+		},
+	}
 }
 
 // JSON is temporary method that silences error during json marshalling.
-func (r Response) JSON() []byte {
+func (r *Response) JSON() []byte {
 	// TODO process error
 	b, _ := json.Marshal(r)
 	return b
@@ -124,7 +142,7 @@ type Error struct {
 	// A Primitive or Structured value that contains additional information about the error.
 	// This may be omitted.
 	// The value of this member is defined by the Server (e.g. detailed error information, nested errors etc.).
-	Data interface{} `json:"data,omitempty"`
+	Data any `json:"data,omitempty"`
 
 	// Err is inner error.
 	Err error `json:"-"`
@@ -143,7 +161,7 @@ func NewError(code int, err error) *Error {
 }
 
 // Error returns first filled value from Err, Message or default text for JSON-RPC error.
-func (e Error) Error() string {
+func (e *Error) Error() string {
 	if e.Err != nil {
 		return e.Err.Error()
 	}
@@ -156,29 +174,12 @@ func (e Error) Error() string {
 }
 
 // Unwrap returns unwrapped inner error if exists
-func (e Error) Unwrap() error {
+func (e *Error) Unwrap() error {
 	return e.Err
 }
 
-// NewResponseError returns new Response with Error object.
-func NewResponseError(id *json.RawMessage, code int, message string, data interface{}) Response {
-	if message == "" {
-		message = ErrorMsg(code)
-	}
-
-	return Response{
-		Version: Version,
-		ID:      id,
-		Error: &Error{
-			Code:    code,
-			Message: message,
-			Data:    data,
-		},
-	}
-}
-
 // Set sets result and error if needed.
-func (r *Response) Set(v interface{}, er ...error) {
+func (r *Response) Set(v any, er ...error) {
 	r.Version = Version
 	var err error
 
@@ -187,17 +188,19 @@ func (r *Response) Set(v interface{}, er ...error) {
 		v = nil
 	}
 	// check for nil *zenrpc.Error
-	// TODO(sergeyfast): add ability to return other error types
 	if len(er) > 0 && er[0] != nil {
 		err = er[0]
-		if e, ok := err.(*Error); ok && e == nil {
+
+		var e *Error
+		if errors.As(err, &e) && e == nil {
 			err = nil
 		}
 	}
 
 	// set first error if occurred
 	if err != nil {
-		if e, ok := err.(*Error); ok {
+		var e *Error
+		if errors.As(err, &e) {
 			r.Error = e
 		} else {
 			r.Error = NewError(InternalError, err)

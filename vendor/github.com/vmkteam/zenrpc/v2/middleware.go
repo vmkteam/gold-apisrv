@@ -28,26 +28,26 @@ func Logger(l *log.Logger) MiddlewareFunc {
 	}
 }
 
-// Metrics is a middleware for logging duration of RPC requests via Prometheus. Default AppName is zenrpc.
-// It exposes two metrics: appName_rpc_error_requests_count and appName_rpc_responses_duration_seconds.
-func Metrics(appName string) MiddlewareFunc {
-	if appName == "" {
-		appName = "zenrpc"
+// Metrics is a middleware for logging duration of RPC requests via Prometheus.
+// It exposes two metrics: app_rpc_error_requests_total and app_rpc_responses_duration_seconds.
+func Metrics(serverName string) MiddlewareFunc {
+	if serverName == "" {
+		serverName = "rpc"
 	}
 
 	rpcErrors := prometheus.NewCounterVec(prometheus.CounterOpts{
-		Namespace: appName,
+		Namespace: "app",
 		Subsystem: "rpc",
-		Name:      "error_requests_count",
+		Name:      "error_requests_total",
 		Help:      "Error requests count by method and error code.",
-	}, []string{"method", "code"})
+	}, []string{"server", "method", "code"})
 
 	rpcDurations := prometheus.NewSummaryVec(prometheus.SummaryOpts{
-		Namespace: appName,
+		Namespace: "app",
 		Subsystem: "rpc",
 		Name:      "responses_duration_seconds",
 		Help:      "Response time by method and error code.",
-	}, []string{"method", "code"})
+	}, []string{"server", "method", "code"})
 
 	prometheus.MustRegister(rpcErrors, rpcDurations)
 
@@ -63,10 +63,10 @@ func Metrics(appName string) MiddlewareFunc {
 
 			if r.Error != nil {
 				code = strconv.Itoa(r.Error.Code)
-				rpcErrors.WithLabelValues(method, code).Inc()
+				rpcErrors.WithLabelValues(serverName, method, code).Inc()
 			}
 
-			rpcDurations.WithLabelValues(method, code).Observe(time.Since(start).Seconds())
+			rpcDurations.WithLabelValues(serverName, method, code).Observe(time.Since(start).Seconds())
 
 			return r
 		}

@@ -159,13 +159,13 @@ var RPC = struct {
 			case RPC.{{$s.Name}}.{{.Name}}: {{ if .Args }}
 					var args = struct {
 						{{ range .Args }}
-							{{.CapitalName}} {{if and (not .HasStar) .HasDefaultValue}}*{{end}}{{.Type}} ` + "`json:\"{{.JsonName}}\"`" + `
+							{{.CapitalName}} {{if and (not .HasStar) .HasDefaultValue}}*{{end}}{{.Type}} ` + "`json:\"{{.JSONName}}\"`" + `
 						{{- end }}
 					}{}
 
 					if zenrpc.IsArray(params) {
 						if params, err = zenrpc.ConvertToObject([]string{ 
-							{{- range .Args }}"{{.JsonName}}",{{ end -}} 
+							{{- range .Args }}"{{.JSONName}}",{{ end -}} 
 							}, params); err != nil {
 							return zenrpc.NewResponseError(nil, zenrpc.InvalidParams, "", err.Error())
 						}

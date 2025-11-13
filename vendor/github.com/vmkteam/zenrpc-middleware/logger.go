@@ -6,6 +6,7 @@ import (
 	"errors"
 	"time"
 
+	"github.com/vmkteam/appkit"
 	"github.com/vmkteam/zenrpc/v2"
 )
 
@@ -21,15 +22,15 @@ func WithAPILogger(pf Printf, serverName string) zenrpc.MiddlewareFunc {
 
 			methodName := fullMethodName(serverName, zenrpc.NamespaceFromContext(ctx), method)
 			pf("ip=%s platform=%q version=%q method=%s duration=%v params=%q err=%q userAgent=%q xRequestId=%q",
-				IPFromContext(ctx),
-				PlatformFromContext(ctx),
-				VersionFromContext(ctx),
+				appkit.IPFromContext(ctx),
+				appkit.PlatformFromContext(ctx),
+				appkit.VersionFromContext(ctx),
 				methodName,
 				time.Since(start),
 				params,
 				r.Error,
-				UserAgentFromContext(ctx),
-				XRequestIDFromContext(ctx),
+				appkit.UserAgentFromContext(ctx),
+				appkit.XRequestIDFromContext(ctx),
 			)
 
 			return r
@@ -62,8 +63,8 @@ func WithSLog(pf Print, serverName string, fn LogAttrs) zenrpc.MiddlewareFunc {
 				"durationMS", t.Milliseconds(),
 				"params", params,
 				"err", r.Error,
-				"userAgent", UserAgentFromContext(ctx),
-				"xRequestId", XRequestIDFromContext(ctx),
+				"userAgent", appkit.UserAgentFromContext(ctx),
+				"xRequestId", appkit.XRequestIDFromContext(ctx),
 			}...)
 
 			pf(ctx, "rpc", append(logArgs, args...)...)
@@ -74,16 +75,16 @@ func WithSLog(pf Print, serverName string, fn LogAttrs) zenrpc.MiddlewareFunc {
 
 func additionalArgs(ctx context.Context) []any {
 	r := make([]any, 0, 4)
-	r = append(r, "ip", IPFromContext(ctx))
-	if v := CountryFromContext(ctx); v != "" {
+	r = append(r, "ip", appkit.IPFromContext(ctx))
+	if v := appkit.CountryFromContext(ctx); v != "" {
 		r = append(r, "country", v)
 	}
 
-	if v := PlatformFromContext(ctx); v != "" {
+	if v := appkit.PlatformFromContext(ctx); v != "" {
 		r = append(r, "platform", v)
 	}
 
-	if v := VersionFromContext(ctx); v != "" {
+	if v := appkit.VersionFromContext(ctx); v != "" {
 		r = append(r, "version", v)
 	}
 

@@ -6,6 +6,8 @@ import (
 	"runtime/debug"
 )
 
+type contextKey string
+
 // Version returns app version from VCS info.
 func Version() string {
 	result := "devel"
