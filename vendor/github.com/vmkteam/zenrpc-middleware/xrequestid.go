@@ -2,35 +2,18 @@ package middleware
 
 import (
 	"context"
-	"crypto/rand"
-	"encoding/hex"
-	"regexp"
 
-	"github.com/labstack/echo/v4"
+	"github.com/vmkteam/appkit"
 )
 
-const ctxXRequestIDKey = echo.HeaderXRequestID
-
-var xRequestIDre = regexp.MustCompile(`[a-zA-Z0-9-]+`)
-
-func generateXRequestID() string {
-	b := make([]byte, 16)
-	_, _ = rand.Read(b)
-	return hex.EncodeToString(b)
-}
-
-func isValidXRequestID(requestID string) bool {
-	return requestID != "" && len(requestID) <= 32 && xRequestIDre.MatchString(requestID)
-}
-
 // XRequestIDFromContext returns X-Request-ID from context.
+// Deprecated: use appkit.XRequestIDFromContext.
 func XRequestIDFromContext(ctx context.Context) string {
-	r, _ := ctx.Value(ctxXRequestIDKey).(string)
-	return r
+	return appkit.XRequestIDFromContext(ctx)
 }
 
 // NewXRequestIDContext creates new context with X-Request-ID.
+// Deprecated: use appkit.NewXRequestIDContext.
 func NewXRequestIDContext(ctx context.Context, requestID string) context.Context {
-	//nolint:staticcheck // must be global
-	return context.WithValue(ctx, ctxXRequestIDKey, requestID)
+	return appkit.NewXRequestIDContext(ctx, requestID)
 }

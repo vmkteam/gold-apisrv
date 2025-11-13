@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/vmkteam/appkit"
 	"github.com/vmkteam/zenrpc/v2"
 )
 
@@ -54,7 +55,7 @@ func WithMetrics(serverName string) zenrpc.MiddlewareFunc {
 			}
 
 			// set platform & version
-			platform, version := PlatformFromContext(ctx), VersionFromContext(ctx)
+			platform, version := appkit.PlatformFromContext(ctx), appkit.VersionFromContext(ctx)
 
 			if r.Error != nil {
 				if r.Error.Code == zenrpc.MethodNotFound {

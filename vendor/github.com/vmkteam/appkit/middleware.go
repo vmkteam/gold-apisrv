@@ -2,8 +2,6 @@ package appkit
 
 import (
 	"context"
-
-	"github.com/getsentry/sentry-go"
 )
 
 const (
@@ -15,7 +13,6 @@ const (
 	ctxUserAgentKey    contextKey = "userAgent"
 	ctxCountryKey      contextKey = "country"
 	ctxNotificationKey string     = "JSONRPC2-Notification"
-	ctxSentryHubKey    contextKey = "sentryHub"
 	debugIDCtx         contextKey = "debugID"
 	sqlGroupCtx        contextKey = "sqlGroup"
 
@@ -57,20 +54,6 @@ func NewSQLGroupContext(ctx context.Context, group string) context.Context {
 func SQLGroupFromContext(ctx context.Context) string {
 	r, _ := ctx.Value(sqlGroupCtx).(string)
 	return r
-}
-
-// NewSentryHubContext creates new context with Sentry Hub.
-func NewSentryHubContext(ctx context.Context, sentryHub *sentry.Hub) context.Context {
-	if sentryHub == nil {
-		return ctx
-	}
-	return context.WithValue(ctx, ctxSentryHubKey, sentryHub)
-}
-
-// SentryHubFromContext returns Sentry Hub from context.
-func SentryHubFromContext(ctx context.Context) (*sentry.Hub, bool) {
-	r, ok := ctx.Value(ctxSentryHubKey).(*sentry.Hub)
-	return r, ok
 }
 
 // NewIPContext creates new context with IP.

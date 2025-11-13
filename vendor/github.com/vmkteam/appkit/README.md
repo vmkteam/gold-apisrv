@@ -161,8 +161,6 @@ arithsrvClient := arithsrv.NewClient(arithsrvUrl, appkit.NewHTTPClient("arithsrv
 - `DebugIDFromContext(ctx context.Context) uint64` - Retrieves debug ID from context
 - `NewSQLGroupContext(ctx context.Context, group string) context.Context` - Creates context with SQL group for debug logging
 - `SQLGroupFromContext(ctx context.Context) string` - Retrieves SQL group from context
-- `NewSentryHubContext(ctx context.Context, sentryHub *sentry.Hub) context.Context` - Creates context with Sentry Hub
-- `SentryHubFromContext(ctx context.Context) (*sentry.Hub, bool)` - Retrieves Sentry Hub from context
 - `NewIPContext(ctx context.Context, ip string) context.Context` - Creates context with IP address
 - `IPFromContext(ctx context.Context) string` - Retrieves IP address from context
 - `NewUserAgentContext(ctx context.Context, ua string) context.Context` - Creates context with User-Agent

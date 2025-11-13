@@ -6,6 +6,7 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/getsentry/sentry-go"
 	sentryecho "github.com/getsentry/sentry-go/echo"
 	"github.com/labstack/echo/v4"
 )
@@ -84,7 +85,7 @@ func EchoIPContext() echo.MiddlewareFunc {
 func applySentryHubToContext(c echo.Context) echo.Context {
 	if hub := sentryecho.GetHubFromContext(c); hub != nil {
 		req := c.Request()
-		c.SetRequest(req.WithContext(NewSentryHubContext(req.Context(), hub)))
+		c.SetRequest(req.WithContext(sentry.SetHubOnContext(req.Context(), hub)))
 	}
 	return c
 }
