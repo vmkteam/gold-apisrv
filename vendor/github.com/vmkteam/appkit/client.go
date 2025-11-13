@@ -76,10 +76,12 @@ func (m *metricsRoundTripper) RoundTrip(req *http.Request) (*http.Response, erro
 	clientInflights.With(labels).Dec()
 	duration := time.Since(start).Seconds()
 
-	labels["method"] = req.Method
+	var code string
 	if resp != nil {
-		labels["code"] = strconv.Itoa(resp.StatusCode)
+		code = strconv.Itoa(resp.StatusCode)
 	}
+	labels["code"] = code
+	labels["method"] = req.Method
 
 	clientRequests.With(labels).Inc()
 	clientDurations.With(labels).Observe(duration)
