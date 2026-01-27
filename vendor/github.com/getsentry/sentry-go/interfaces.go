@@ -80,7 +80,7 @@ func (b *Breadcrumb) MarshalJSON() ([]byte, error) {
 
 	if b.Timestamp.IsZero() {
 		return json.Marshal(struct {
-			// Embed all of the fields of Breadcrumb.
+			// Embed all the fields of Breadcrumb.
 			*breadcrumb
 			// Timestamp shadows the original Timestamp field and is meant to
 			// remain nil, triggering the omitempty behavior.
@@ -493,6 +493,70 @@ func (e *Event) ToEnvelopeWithTime(dsn *protocol.Dsn, sentAt time.Time) (*protoc
 	return envelope, nil
 }
 
+// ToEnvelopeItem converts the Event to a Sentry envelope item.
+func (e *Event) ToEnvelopeItem() (*protocol.EnvelopeItem, error) {
+	eventBody, err := json.Marshal(e)
+	if err != nil {
+		// Try fallback: remove problematic fields and retry
+		e.Breadcrumbs = nil
+		e.Contexts = nil
+		e.Extra = map[string]interface{}{
+			"info": fmt.Sprintf("Could not encode original event as JSON. "+
+				"Succeeded by removing Breadcrumbs, Contexts and Extra. "+
+				"Please verify the data you attach to the scope. "+
+				"Error: %s", err),
+		}
+
+		eventBody, err = json.Marshal(e)
+		if err != nil {
+			return nil, fmt.Errorf("event could not be marshaled even with fallback: %w", err)
+		}
+
+		DebugLogger.Printf("Event marshaling succeeded with fallback after removing problematic fields")
+	}
+
+	// TODO: all event types should be abstracted to implement EnvelopeItemConvertible and convert themselves.
+	var item *protocol.EnvelopeItem
+	switch e.Type {
+	case transactionType:
+		item = protocol.NewEnvelopeItem(protocol.EnvelopeItemTypeTransaction, eventBody)
+	case checkInType:
+		item = protocol.NewEnvelopeItem(protocol.EnvelopeItemTypeCheckIn, eventBody)
+	case logEvent.Type:
+		item = protocol.NewLogItem(len(e.Logs), eventBody)
+	default:
+		item = protocol.NewEnvelopeItem(protocol.EnvelopeItemTypeEvent, eventBody)
+	}
+
+	return item, nil
+}
+
+// GetCategory returns the rate limit category for this event.
+func (e *Event) GetCategory() ratelimit.Category {
+	return e.toCategory()
+}
+
+// GetEventID returns the event ID.
+func (e *Event) GetEventID() string {
+	return string(e.EventID)
+}
+
+// GetSdkInfo returns SDK information for the envelope header.
+func (e *Event) GetSdkInfo() *protocol.SdkInfo {
+	return &e.Sdk
+}
+
+// GetDynamicSamplingContext returns trace context for the envelope header.
+func (e *Event) GetDynamicSamplingContext() map[string]string {
+	trace := make(map[string]string)
+	if dsc := e.sdkMetaData.dsc; dsc.HasEntries() {
+		for k, v := range dsc.Entries {
+			trace[k] = v
+		}
+	}
+	return trace
+}
+
 // TODO: Event.Contexts map[string]interface{} => map[string]EventContext,
 // to prevent accidentally storing T when we mean *T.
 // For example, the TraceContext must be stored as *TraceContext to pick up the
@@ -659,12 +723,48 @@ type EventHint struct {
 }
 
 type Log struct {
-	Timestamp  time.Time            `json:"timestamp,omitempty"`
-	TraceID    TraceID              `json:"trace_id,omitempty"`
+	Timestamp  time.Time            `json:"timestamp"`
+	TraceID    TraceID              `json:"trace_id"`
+	SpanID     SpanID               `json:"span_id,omitempty"`
 	Level      LogLevel             `json:"level"`
 	Severity   int                  `json:"severity_number,omitempty"`
-	Body       string               `json:"body,omitempty"`
+	Body       string               `json:"body"`
 	Attributes map[string]Attribute `json:"attributes,omitempty"`
+}
+
+// ToEnvelopeItem converts the Log to a Sentry envelope item for batching.
+func (l *Log) ToEnvelopeItem() (*protocol.EnvelopeItem, error) {
+	logData, err := json.Marshal(l)
+	if err != nil {
+		return nil, err
+	}
+
+	return &protocol.EnvelopeItem{
+		Header: &protocol.EnvelopeItemHeader{
+			Type: protocol.EnvelopeItemTypeLog,
+		},
+		Payload: logData,
+	}, nil
+}
+
+// GetCategory returns the rate limit category for logs.
+func (l *Log) GetCategory() ratelimit.Category {
+	return ratelimit.CategoryLog
+}
+
+// GetEventID returns empty string (event ID set when batching).
+func (l *Log) GetEventID() string {
+	return ""
+}
+
+// GetSdkInfo returns nil (SDK info set when batching).
+func (l *Log) GetSdkInfo() *protocol.SdkInfo {
+	return nil
+}
+
+// GetDynamicSamplingContext returns nil (trace context set when batching).
+func (l *Log) GetDynamicSamplingContext() map[string]string {
+	return nil
 }
 
 type AttrType string
@@ -680,4 +780,33 @@ const (
 type Attribute struct {
 	Value any      `json:"value"`
 	Type  AttrType `json:"type"`
+}
+
+// MarshalJSON is a custom implementation that skips SpanID and timestamp when empty.
+func (l *Log) MarshalJSON() ([]byte, error) {
+	type log Log
+
+	var spanID string
+	if l.SpanID != zeroSpanID {
+		spanID = l.SpanID.String()
+	}
+
+	var ts json.RawMessage
+	if !l.Timestamp.IsZero() {
+		b, err := l.Timestamp.MarshalJSON()
+		if err != nil {
+			return nil, err
+		}
+		ts = b
+	}
+
+	return json.Marshal(struct {
+		*log
+		SpanID    string          `json:"span_id,omitempty"`
+		Timestamp json.RawMessage `json:"timestamp,omitempty"`
+	}{
+		log:       (*log)(l),
+		SpanID:    spanID,
+		Timestamp: ts,
+	})
 }

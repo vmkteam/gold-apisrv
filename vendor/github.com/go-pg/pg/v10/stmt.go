@@ -3,6 +3,7 @@ package pg
 import (
 	"context"
 	"errors"
+	"time"
 
 	"github.com/go-pg/pg/v10/internal"
 	"github.com/go-pg/pg/v10/internal/pool"
@@ -102,6 +103,11 @@ func (stmt *Stmt) exec(ctx context.Context, params ...interface{}) (Result, erro
 		}
 
 		lastErr = stmt.withConn(ctx, func(c context.Context, cn *pool.Conn) error {
+			if evt != nil && evt.Stash != nil {
+				evt.Stash["attempt"] = attempt
+				evt.Stash["queryBegin"] = time.Now()
+			}
+
 			res, err = stmt.extQuery(ctx, cn, stmt.name, params...)
 			return err
 		})
@@ -167,6 +173,11 @@ func (stmt *Stmt) query(ctx context.Context, model interface{}, params ...interf
 		}
 
 		lastErr = stmt.withConn(ctx, func(c context.Context, cn *pool.Conn) error {
+			if evt != nil && evt.Stash != nil {
+				evt.Stash["attempt"] = attempt
+				evt.Stash["queryBegin"] = time.Now()
+			}
+
 			res, err = stmt.extQueryData(ctx, cn, stmt.name, model, stmt.columns, params...)
 			return err
 		})

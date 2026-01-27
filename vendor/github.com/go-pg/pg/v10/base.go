@@ -249,6 +249,11 @@ func (db *baseDB) exec(ctx context.Context, query interface{}, params ...interfa
 		}
 
 		lastErr = db.withConn(ctx, func(ctx context.Context, cn *pool.Conn) error {
+			if evt != nil && evt.Stash != nil {
+				evt.Stash["attempt"] = attempt
+				evt.Stash["queryBegin"] = time.Now()
+			}
+
 			res, err = db.simpleQuery(ctx, cn, wb)
 			return err
 		})
@@ -319,6 +324,11 @@ func (db *baseDB) query(ctx context.Context, model, query interface{}, params ..
 		}
 
 		lastErr = db.withConn(ctx, func(ctx context.Context, cn *pool.Conn) error {
+			if evt != nil && evt.Stash != nil {
+				evt.Stash["attempt"] = attempt
+				evt.Stash["queryBegin"] = time.Now()
+			}
+
 			res, err = db.simpleQueryData(ctx, cn, model, wb)
 			return err
 		})

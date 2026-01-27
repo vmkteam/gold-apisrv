@@ -6,6 +6,7 @@ import (
 	"io"
 	"sync"
 	"sync/atomic"
+	"time"
 
 	"github.com/go-pg/pg/v10/internal"
 	"github.com/go-pg/pg/v10/internal/pool"
@@ -164,6 +165,10 @@ func (tx *Tx) exec(ctx context.Context, query interface{}, params ...interface{}
 
 	var res Result
 	lastErr := tx.withConn(ctx, func(ctx context.Context, cn *pool.Conn) error {
+		if evt != nil && evt.Stash != nil {
+			evt.Stash["queryBegin"] = time.Now()
+		}
+
 		res, err = tx.db.simpleQuery(ctx, cn, wb)
 		return err
 	})
@@ -231,6 +236,10 @@ func (tx *Tx) query(
 
 	var res *result
 	lastErr := tx.withConn(ctx, func(ctx context.Context, cn *pool.Conn) error {
+		if evt != nil && evt.Stash != nil {
+			evt.Stash["queryBegin"] = time.Now()
+		}
+
 		res, err = tx.db.simpleQueryData(ctx, cn, model, wb)
 		return err
 	})
