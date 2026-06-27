@@ -39,6 +39,7 @@ tools:
 	@go install github.com/vmkteam/pgmigrator@latest
 	@go install github.com/vmkteam/colgen/cmd/colgen@latest
 	@curl -sfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin ${LINT_VERSION}
+	@brew install vmkteam/tap/pgdesigner
 
 fmt:
 	@golangci-lint fmt
@@ -79,6 +80,39 @@ db:
 
 db-test:
 	@$(MAKE) --no-print-directory db PGDATABASE=${TEST_PGDATABASE}
+
+# --- pgDesigner: .pgd as schema source of truth ---
+PGD := docs/$(NAME).pgd
+
+pgd-sql:
+	@pgdesigner generate -o docs/$(NAME).sql $(PGD)
+
+pgd-lint:
+	@pgdesigner lint $(PGD)
+
+pgd-fix:
+	@pgdesigner lint -fix $(PGD)
+
+pgd-check:
+	@pgdesigner lint -s error $(PGD)
+	@pgdesigner generate $(PGD) | diff -u docs/$(NAME).sql - \
+		|| { echo "docs/$(NAME).sql is stale, run 'make pgd-sql'"; exit 1; }
+
+pgd-testdata:
+	@pgdesigner testdata -seed 42 -rows 100 $(PGD)
+
+pgd-from-pdd:
+	@pgdesigner convert -o $(PGD) docs/$(NAME).pdd
+
+# pgd-diff: ALTER between committed and working .pgd -> docs/patches/<ts>.sql
+# override target file: make pgd-diff PATCH=docs/patches/my.sql
+PATCH ?=
+pgd-diff:
+	@git show HEAD:$(PGD) > /tmp/$(NAME).head.pgd 2>/dev/null \
+		|| { echo "no committed $(PGD)"; exit 1; }
+	@out="$(PATCH)"; [ -n "$$out" ] || out="docs/patches/$$(date +%Y%m%d_%H%M%S).sql"; \
+		pgdesigner diff -o "$$out" /tmp/$(NAME).head.pgd $(PGD); \
+		test -f "$$out" && echo "saved: $$out" || true
 
 NS := "NONE"
 
